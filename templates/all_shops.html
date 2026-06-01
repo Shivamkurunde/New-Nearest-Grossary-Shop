@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>All Nearby Shops | Nearest Grocery Shop</title>
+    <meta name="description" content="Browse all grocery shops near you.">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+{% include 'header.html' %}
+
+<div class="page-header shops-header">
+    <div class="breadcrumb">
+        <a href="/">Home</a> ›
+        <a href="/location">Location</a> ›
+        <span>All Nearby Shops</span>
+    </div>
+    <h1>📍 All Nearby Shops</h1>
+    <p>
+        {{ shops|length }} grocery shop{{ 's' if shops|length != 1 else '' }} found
+        · Sorted nearest to farthest · Showing <span id="showing-count"></span>
+    </p>
+</div>
+
+{% with messages = get_flashed_messages(with_categories=true) %}
+{% if messages %}
+<div class="container" style="padding-bottom:0;">
+    {% for cat, msg in messages %}
+    <div class="alert alert-{{ cat }}">{{ msg }}</div>
+    {% endfor %}
+</div>
+{% endif %}
+{% endwith %}
+
+<div class="shops-grid container" id="shops-container">
+    {% for shop in shops %}
+    <div class="shop-card shop-item" style="display: {{ 'block' if loop.index0 < 5 else 'none' }};">
+        <div class="shop-img-wrap">
+            <img src="{{ shop.image }}" alt="{{ shop.name }}" class="shop-img" onerror="this.src='/static/images/products/placeholder.png'; this.style.objectFit='contain'; this.style.padding='20px';">
+            <span class="shop-tag {{ 'tag-open' if shop.status == 'Open' else 'tag-closed' }}">
+                {{ '🟢 Open' if shop.status == 'Open' else '🔴 Closed' }}
+            </span>
+        </div>
+        <div class="shop-body">
+            <div class="shop-meta-row">
+                <span class="shop-dist">📍 {{ shop.distance }}</span>
+                <span class="shop-rating">⭐ {{ shop.rating }}</span>
+            </div>
+            <h3 class="shop-name">{{ shop.name }}</h3>
+            <p class="shop-owner">👤 {{ shop.owner }}</p>
+            <p class="shop-contact">📞 {{ shop.phone }}</p>
+            {% if shop.status == 'Open' %}
+                <a href="/items?shop_id={{ shop.id }}&loc={{ shop.location_key }}" class="btn btn-green" style="width:100%; margin-top:14px; display:block; text-align:center;">View Items →</a>
+            {% else %}
+                <button class="btn btn-disabled" style="width:100%; margin-top:14px;" disabled>Currently Closed</button>
+            {% endif %}
+        </div>
+    </div>
+    {% else %}
+    <div style="grid-column:1/-1; text-align:center; padding:60px 20px; color:var(--muted);">
+        <div style="font-size:3rem; margin-bottom:16px;">🏪</div>
+        <h3>No shops found nearby.</h3>
+    </div>
+    {% endfor %}
+</div>
+
+<div id="pagination-controls" class="container" style="text-align: center; margin-bottom: 40px; padding-top: 10px; display: flex; justify-content: center; flex-wrap: wrap; gap: 8px;">
+    <!-- Pagination buttons injected via JS -->
+</div>
+
+{% include 'footer.html' %}
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const items = document.querySelectorAll('.shop-item');
+        const countDisplay = document.getElementById('showing-count');
+        const paginationContainer = document.getElementById('pagination-controls');
+        
+        const itemsPerPage = 5;
+        const totalPages = Math.ceil(items.length / itemsPerPage);
+        let currentPage = 1;
+
+        function showPage(page) {
+            currentPage = page;
+            
+            // Hide all, show only current page
+            items.forEach((item, index) => {
+                if (index >= (page - 1) * itemsPerPage && index < page * itemsPerPage) {
+                    item.style.display = 'block';
+                } else {
+                    item.style.display = 'none';
+                }
+            });
+
+            // Update text
+            const start = (page - 1) * itemsPerPage + 1;
+            const end = Math.min(page * itemsPerPage, items.length);
+            if (countDisplay) {
+                if (items.length === 0) {
+                    countDisplay.innerText = '0';
+                } else {
+                    countDisplay.innerText = `${start}-${end} of ${items.length}`;
+                }
+            }
+
+            renderPagination();
+        }
+
+        function renderPagination() {
+            if (!paginationContainer || totalPages <= 1) {
+                if(paginationContainer) paginationContainer.innerHTML = '';
+                return;
+            }
+            
+            let html = '';
+            for (let i = 1; i <= totalPages; i++) {
+                if (i === currentPage) {
+                    html += `<button class="btn btn-green" style="padding: 8px 16px; border-radius: 8px; font-weight: bold;">${i}</button>`;
+                } else {
+                    html += `<button class="btn btn-outline page-btn" data-page="${i}" style="padding: 8px 16px; border: 2px solid var(--green); color: var(--green); background: transparent; border-radius: 8px; cursor: pointer; font-weight: bold;">${i}</button>`;
+                }
+            }
+            paginationContainer.innerHTML = html;
+
+            // Add click events to new buttons
+            document.querySelectorAll('.page-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    showPage(parseInt(this.getAttribute('data-page')));
+                    // Smooth scroll back to top of the grid
+                    const grid = document.getElementById('shops-container');
+                    const offset = grid.getBoundingClientRect().top + window.scrollY - 100;
+                    window.scrollTo({ top: offset, behavior: 'smooth' });
+                });
+            });
+        }
+
+        // Initialize first page
+        showPage(1);
+    });
+</script>
+</body>
+</html>

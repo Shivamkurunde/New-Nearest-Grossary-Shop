@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Select Location | Nearest Grocery Shop</title>
+    <meta name="description" content="Choose your location to find the nearest grocery shops in Nanded City, Waghala, or Degloor Naka.">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+
+{% include 'header.html' %}
+
+
+<div class="page-header" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 20px;">
+    <div>
+        <div class="breadcrumb"><a href="/">Home</a> › Select Location</div>
+        <h1 style="margin-top: 10px;">📍 Where are you?</h1>
+        <p style="margin-top: 5px;">Select your location to see nearby grocery shops sorted by distance.</p>
+    </div>
+    <div>
+        <button id="btn-find-all-nearby" class="btn btn-green" style="white-space: nowrap; height: 50px; display: flex; align-items: center; gap: 8px;">
+            📍 Find All Nearby
+        </button>
+    </div>
+</div>
+
+{% with messages = get_flashed_messages(with_categories=true) %}
+{% if messages %}
+<div class="container" style="padding-bottom:0;">
+    {% for cat, msg in messages %}
+    <div class="alert alert-{{ cat }}">{{ msg }}</div>
+    {% endfor %}
+</div>
+{% endif %}
+{% endwith %}
+
+<!-- Location Search Bar -->
+<div class="location-search-section">
+    <div class="location-search-wrap">
+        <span class="search-icon">🔍</span>
+        <input type="text" id="location-search" class="location-search-input" placeholder="Search locations in Nanded (e.g. City, Waghala, Degloor)..." autocomplete="off">
+        <button type="button" id="search-clear" class="search-clear-btn">✖</button>
+    </div>
+</div>
+
+<!-- GPS Status Banner -->
+<div class="container" style="padding-bottom:0; padding-top:16px;">
+    <div class="gps-banner" id="gps-banner">
+        <span id="gps-icon">📡</span>
+        <span id="gps-text">Detecting your location to sort shops by distance…</span>
+    </div>
+</div>
+
+<div class="location-grid container">
+    {% for card in location_cards %}
+    <a href="{{ card.url }}" class="loc-card loc-active" id="loc-{{ card.key }}"
+       data-key="{{ card.key }}" data-lat="{{ card.lat }}" data-lng="{{ card.lng }}">
+        <div class="loc-emoji">{{ card.emoji }}</div>
+        <h3>{{ card.name }}</h3>
+        <p>{{ card.description }}</p>
+        <div class="loc-meta">
+            <span class="loc-shops-count">🏪 {{ card.shop_count }} shops</span>
+            <span class="loc-open-count">🟢 {{ card.open_count }} open</span>
+        </div>
+        <span class="loc-badge live">✅ Available</span>
+    </a>
+    {% endfor %}
+</div>
+
+<div class="loc-no-results container" id="no-results-msg">
+    <h3>😕 No locations matched your search</h3>
+    <p>Try searching for "Nanded City", "Waghala", or "Degloor".</p>
+</div>
+
+{% include 'footer.html' %}
+
+<script>
+// GPS detection – updates links with lat/lng before navigation
+(function () {
+    const banner   = document.getElementById('gps-banner');
+    const gpsText  = document.getElementById('gps-text');
+    const gpsIcon  = document.getElementById('gps-icon');
+    const cards    = document.querySelectorAll('.loc-card[data-lat]');
+    const searchInput = document.getElementById('location-search');
+    const clearBtn = document.getElementById('search-clear');
+    const noResults = document.getElementById('no-results-msg');
+
+    function setGpsStatus(success, msg) {
+        gpsIcon.textContent = success ? '✅' : '⚠️';
+        gpsText.textContent = msg;
+        banner.classList.toggle('gps-success', success);
+        banner.classList.toggle('gps-warn', !success);
+    }
+
+    let currentLat = null, currentLng = null;
+    const btnFindAll = document.getElementById('btn-find-all-nearby');
+
+    function attachCoords(lat, lng) {
+        currentLat = lat;
+        currentLng = lng;
+        cards.forEach(card => {
+            const base = card.getAttribute('href').split('?')[0];
+            const key  = card.dataset.key;
+            card.setAttribute('href', `${base}?loc=${key}&lat=${lat}&lng=${lng}`);
+        });
+    }
+
+    if (btnFindAll) {
+        btnFindAll.addEventListener('click', function() {
+            if (currentLat && currentLng) {
+                window.location.href = `/all_shops?lat=${currentLat}&lng=${currentLng}`;
+            } else {
+                alert("Still detecting GPS or permission denied. Please allow location in your browser first.");
+            }
+        });
+    }
+
+    if (!navigator.geolocation) {
+        setGpsStatus(false, 'GPS not supported by your browser. Showing default distances.');
+    } else {
+        navigator.geolocation.getCurrentPosition(
+            function (pos) {
+                const { latitude: lat, longitude: lng } = pos.coords;
+                attachCoords(lat.toFixed(6), lng.toFixed(6));
+                setGpsStatus(true, `Location detected (${lat.toFixed(4)}, ${lng.toFixed(4)}). Shops sorted nearest → farthest.`);
+            },
+            function (err) {
+                const msgs = {
+                    1: 'Location permission denied. Enable GPS for accurate distances.',
+                    2: 'Unable to determine your location. Using default distances.',
+                    3: 'Location request timed out. Using default distances.',
+                };
+                setGpsStatus(false, msgs[err.code] || 'GPS unavailable. Using default distances.');
+            },
+            { timeout: 8000, enableHighAccuracy: true }
+        );
+    }
+
+    // Card click highlight
+    cards.forEach(card => {
+        card.addEventListener('click', function () {
+            cards.forEach(c => c.classList.remove('loc-selected'));
+            this.classList.add('loc-selected');
+        });
+    });
+
+    // Search input filtering
+    searchInput.addEventListener('input', function() {
+        const query = this.value.toLowerCase().trim();
+        let visibleCount = 0;
+
+        if (query) {
+            clearBtn.style.display = 'block';
+        } else {
+            clearBtn.style.display = 'none';
+        }
+
+        cards.forEach(card => {
+            const name = card.querySelector('h3').textContent.toLowerCase();
+            const desc = card.querySelector('p').textContent.toLowerCase();
+            if (name.includes(query) || desc.includes(query)) {
+                card.style.display = 'block';
+                visibleCount++;
+            } else {
+                card.style.display = 'none';
+            }
+        });
+
+        if (visibleCount === 0) {
+            noResults.style.display = 'block';
+        } else {
+            noResults.style.display = 'none';
+        }
+    });
+
+    clearBtn.addEventListener('click', function() {
+        searchInput.value = '';
+        searchInput.dispatchEvent(new Event('input'));
+        searchInput.focus();
+    });
+})();
+</script>
+
+</body>
+</html>

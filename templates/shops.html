@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Shops – {{ location }} | Nearest Grocery Shop</title>
+    <meta name="description" content="Browse grocery shops near {{ location }} and find the best one for your needs.">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+
+{% include 'header.html' %}
+
+<div class="page-header shops-header">
+    <div class="breadcrumb">
+        <a href="/">Home</a> ›
+        <a href="/location">Location</a> ›
+        <span>{{ location }}</span>
+    </div>
+    <h1>📍 Shops near {{ location }}</h1>
+    <p>
+        {{ shops|length }} grocery shop{{ 's' if shops|length != 1 else '' }} found
+        · Sorted nearest to farthest · Select a shop to view items.
+    </p>
+</div>
+
+{% with messages = get_flashed_messages(with_categories=true) %}
+{% if messages %}
+<div class="container" style="padding-bottom:0;">
+    {% for cat, msg in messages %}
+    <div class="alert alert-{{ cat }}">{{ msg }}</div>
+    {% endfor %}
+</div>
+{% endif %}
+{% endwith %}
+
+<div class="shops-grid container">
+    {% for shop in shops %}
+    <div class="shop-card">
+        <div class="shop-img-wrap">
+            <img src="{{ shop.image }}"
+                 alt="{{ shop.name }}"
+                 class="shop-img"
+                 onerror="this.src='/static/images/products/placeholder.png'; this.style.objectFit='contain'; this.style.padding='20px';">
+            <span class="shop-tag {{ 'tag-open' if shop.status == 'Open' else 'tag-closed' }}">
+                {{ '🟢 Open' if shop.status == 'Open' else '🔴 Closed' }}
+            </span>
+        </div>
+        <div class="shop-body">
+            <div class="shop-meta-row">
+                <span class="shop-dist">📍 {{ shop.distance }}</span>
+                <span class="shop-rating">⭐ {{ shop.rating }}</span>
+            </div>
+            <h3 class="shop-name">{{ shop.name }}</h3>
+            <p class="shop-owner">👤 {{ shop.owner }}</p>
+            <p class="shop-contact">📞 {{ shop.phone }}</p>
+            {% if shop.status == 'Open' %}
+                <a href="/items?shop_id={{ shop.id }}&loc={{ location_key }}"
+                   class="btn btn-green" style="width:100%; margin-top:14px; display:block; text-align:center;">
+                    View Items →
+                </a>
+            {% else %}
+                <button class="btn btn-disabled"
+                        style="width:100%; margin-top:14px;" disabled>
+                    Currently Closed
+                </button>
+            {% endif %}
+        </div>
+    </div>
+    {% else %}
+    <div style="grid-column:1/-1; text-align:center; padding:60px 20px; color:var(--muted);">
+        <div style="font-size:3rem; margin-bottom:16px;">🏪</div>
+        <h3>No shops found for this location.</h3>
+        <p style="margin-top:8px;">Please <a href="/location" style="color:var(--green);">go back</a> and try another location.</p>
+    </div>
+    {% endfor %}
+</div>
+
+{% include 'footer.html' %}
+
+</body>
+</html>
+
+</body>
+</html>

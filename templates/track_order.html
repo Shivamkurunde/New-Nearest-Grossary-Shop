@@ -1,0 +1,711 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Track Order #{{ order._id[:8] | upper }} | Nearest Grocery Shop</title>
+    <meta name="description" content="Track your grocery order status in real time.">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <style>
+        :root {
+            --primary-green: var(--green);
+            --primary-green-dark: var(--green-dark);
+            --primary-green-light: var(--primary-green-light);
+            --orange-accent: var(--accent-color);
+            --orange-light: var(--accent-color-light);
+            --bg-light: var(--bg);
+            --text-dark: var(--text-main);
+            --text-muted: var(--text-muted);
+            --border-light: var(--border);
+            --radius-card: 16px;
+        }
+
+        body {
+            background-color: var(--bg-light) !important;
+            font-family: 'Inter', sans-serif !important;
+            color: var(--text-dark) !important;
+        }
+
+        .track-page-container {
+            max-width: 1040px;
+            margin: 0 auto 60px;
+            padding: 32px 24px;
+        }
+
+        .track-back-btn {
+            font-size: 0.9rem;
+            color: var(--primary-green);
+            font-weight: 700;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            margin-bottom: 24px;
+            text-decoration: none;
+            transition: transform 0.2s ease;
+        }
+
+        .track-back-btn:hover {
+            transform: translateX(-4px);
+            text-decoration: underline;
+        }
+
+        /* Redesigned Header */
+        .track-header-box {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 32px;
+            flex-wrap: wrap;
+            gap: 16px;
+        }
+
+        .track-title-wrap h1 {
+            font-size: 2rem;
+            font-weight: 900;
+            color: var(--text-dark);
+            margin: 0 0 6px 0;
+            letter-spacing: -0.5px;
+        }
+
+        .track-title-wrap p {
+            font-size: 0.95rem;
+            color: var(--text-muted);
+            margin: 0;
+            font-weight: 600;
+            font-family: monospace;
+        }
+
+        /* 2-Column Grid Layout */
+        .track-grid {
+            display: grid;
+            grid-template-columns: 1.2fr 1fr;
+            gap: 32px;
+            align-items: start;
+        }
+
+        @media (max-width: 900px) {
+            .track-grid {
+                grid-template-columns: 1fr;
+                gap: 24px;
+            }
+        }
+
+        /* Cards styling */
+        .track-card {
+            background: var(--card-bg);
+            border-radius: var(--radius-card);
+            border: 1.5px solid var(--border-light);
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.02);
+            padding: 28px;
+            margin-bottom: 24px;
+        }
+
+        .track-card:last-child {
+            margin-bottom: 0;
+        }
+
+        .track-card-title {
+            font-size: 1.15rem;
+            font-weight: 800;
+            color: var(--text-dark);
+            margin: 0 0 24px 0;
+            padding-bottom: 12px;
+            border-bottom: 1.5px solid var(--border-light);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        /* ETA Display banner */
+        .eta-banner {
+            background: linear-gradient(135deg, rgba(46, 125, 50, 0.06), rgba(74, 222, 128, 0.02));
+            border: 1.5px solid rgba(46, 125, 50, 0.15);
+            border-radius: var(--radius-card);
+            padding: 20px 24px;
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            margin-bottom: 28px;
+        }
+
+        .eta-icon-large {
+            font-size: 2.2rem;
+        }
+
+        .eta-text-block {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .eta-lbl {
+            font-size: 0.78rem;
+            font-weight: 800;
+            color: var(--primary-green-dark);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .eta-val {
+            font-size: 1.35rem;
+            font-weight: 900;
+            color: var(--primary-green-dark);
+            margin-top: 2px;
+        }
+
+        /* Cancelled Banner */
+        .cancelled-banner {
+            background: #fff5f5;
+            border: 1.5px solid #feb2b2;
+            border-radius: var(--radius-card);
+            padding: 20px 24px;
+            display: none;
+            align-items: center;
+            gap: 16px;
+            margin-bottom: 28px;
+        }
+
+        .cancelled-icon {
+            font-size: 2.2rem;
+        }
+
+        .cancelled-text {
+            color: #c53030;
+            font-weight: 700;
+            font-size: 1rem;
+        }
+
+        /* Premium Vertical Timeline */
+        .timeline-vertical {
+            position: relative;
+            padding-left: 54px;
+            margin: 10px 0;
+        }
+
+        .timeline-vertical::before {
+            content: '';
+            position: absolute;
+            top: 12px;
+            bottom: 12px;
+            left: 20px;
+            width: 4px;
+            background: #e2e8f0;
+            z-index: 0;
+        }
+
+        .timeline-progress-line-vert {
+            position: absolute;
+            top: 12px;
+            left: 20px;
+            width: 4px;
+            background: linear-gradient(180deg, var(--primary-green), #4ade80);
+            z-index: 1;
+            height: 0%;
+            transition: height 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .timeline-step-vert {
+            position: relative;
+            padding-bottom: 40px;
+            display: flex;
+            flex-direction: column;
+            z-index: 2;
+        }
+
+        .timeline-step-vert:last-child {
+            padding-bottom: 0;
+        }
+
+        .step-circle-vert {
+            position: absolute;
+            left: -54px;
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            background: var(--card-bg);
+            border: 3.5px solid var(--border-light);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.1rem;
+            z-index: 3;
+            transition: all 0.3s ease;
+        }
+ 
+        /* Done state styling */
+        .timeline-step-vert.step-done .step-circle-vert {
+            background: var(--primary-green);
+            border-color: var(--primary-green);
+            color: #fff;
+            box-shadow: 0 4px 10px rgba(46,125,50,0.18);
+        }
+ 
+        /* Active state styling */
+        .timeline-step-vert.step-active .step-circle-vert {
+            background: var(--card-bg);
+            border-color: var(--primary-green);
+            color: var(--primary-green);
+            box-shadow: 0 0 0 5px rgba(46,125,50,0.15);
+            animation: pulse-step 1.5s infinite;
+        }
+
+        @keyframes pulse-step {
+            0%, 100% { box-shadow: 0 0 0 5px rgba(46,125,50,0.15); }
+            50%       { box-shadow: 0 0 0 10px rgba(46,125,50,0.06); }
+        }
+
+        .step-content-vert {
+            margin-left: 8px;
+        }
+
+        .step-title-vert {
+            font-size: 0.95rem;
+            font-weight: 800;
+            color: var(--text-dark);
+            margin: 0 0 4px 0;
+            transition: color 0.3s;
+        }
+
+        .step-desc-vert {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            font-weight: 600;
+            line-height: 1.4;
+        }
+
+        .timeline-step-vert.step-done .step-title-vert {
+            color: var(--primary-green-dark);
+        }
+
+        .timeline-step-vert.step-active .step-title-vert {
+            color: var(--primary-green);
+        }
+
+        /* Current status display badge container */
+        .current-badge-wrap {
+            text-align: center;
+            margin-top: 24px;
+            padding-top: 20px;
+            border-top: 1.5px solid var(--border-light);
+        }
+
+        .current-badge-lbl {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            font-weight: 700;
+            margin-bottom: 8px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        /* Polling indicator */
+        .sync-indicator {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            text-align: center;
+            margin-top: 18px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            font-weight: 600;
+        }
+
+        .sync-spinner {
+            animation: spin-sync 2.5s linear infinite;
+            display: inline-block;
+        }
+
+        @keyframes spin-sync {
+            to { transform: rotate(360deg); }
+        }
+
+        /* Receipt Breakdown Styling */
+        .receipt-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 0;
+            border-bottom: 1px solid var(--border-light);
+            font-size: 0.9rem;
+            color: var(--text-dark);
+        }
+
+        .receipt-row:last-child {
+            border-bottom: none;
+        }
+
+        .receipt-lbl {
+            color: var(--text-muted);
+            font-weight: 600;
+        }
+
+        .receipt-val {
+            font-weight: 700;
+            color: var(--text-dark);
+            text-align: right;
+        }
+
+        .receipt-val.orange {
+            color: var(--orange-accent);
+        }
+
+        /* Items summary receipt list */
+        .item-receipt-list {
+            margin-top: 16px;
+            border-top: 1.5px solid var(--border-light);
+            padding-top: 16px;
+        }
+
+        .item-receipt-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 0;
+            font-size: 0.88rem;
+            font-weight: 600;
+        }
+
+        .item-receipt-name {
+            color: var(--text-dark);
+        }
+
+        .item-receipt-qty {
+            color: var(--text-muted);
+            font-family: monospace;
+        }
+
+        .item-receipt-price {
+            color: var(--text-dark);
+            font-weight: 700;
+        }
+
+        .status-badge-new {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 8px 20px;
+            border-radius: 50px;
+            font-size: 0.9rem;
+            font-weight: 800;
+            letter-spacing: 0.3px;
+        }
+
+        .badge-pending-new   { background: #fff3e0; color: #ea580c; border: 1px solid #ffcc80; }
+        .badge-accepted-new  { background: #e8f5e9; color: #2e7d32; border: 1px solid #a5d6a7; }
+        .badge-preparing-new { background: #e0f2fe; color: #0369a1; border: 1px solid #bae6fd; }
+        .badge-ready-new     { background: #f3e8ff; color: #6b21a8; border: 1px solid #e9d5ff; }
+        .badge-delivery-new  { background: #fffbeb; color: #b45309; border: 1px solid #fde68a; }
+        .badge-delivered-new { background: #dcfce7; color: #15803d; border: 1px solid #bbf7d0; }
+        .badge-cancelled-new { background: #fee2e2; color: #b91c1c; border: 1px solid #fecaca; }
+
+        html[data-theme="dark"] .cancelled-banner {
+            background: #270e0f;
+            border: 1.5px solid #5b1a1c;
+            color: #fecaca;
+        }
+        html[data-theme="dark"] .cancelled-text {
+            color: #fecaca;
+        }
+    </style>
+</head>
+<body>
+
+{% include 'header.html' %}
+
+<div class="track-page-container">
+    <a href="/my_orders" class="track-back-btn">← Back to My Orders</a>
+
+    <div class="track-header-box">
+        <div class="track-title-wrap">
+            <h1>📍 Order Tracking</h1>
+            <p>Order ID: #ORD{{ order._id | upper }}</p>
+        </div>
+    </div>
+
+    <!-- ETA Banner Card -->
+    <div class="eta-banner" id="eta-card">
+        <div class="eta-icon-large">🕐</div>
+        <div class="eta-text-block">
+            <div class="eta-lbl">Estimated Delivery Time</div>
+            <div class="eta-val" id="eta-value">{{ order.get('estimated_delivery', '30-45 minutes') }}</div>
+        </div>
+    </div>
+
+    <!-- Cancelled Warning Banner -->
+    <div class="cancelled-banner" id="cancelled-banner">
+        <div class="cancelled-icon">⚠️</div>
+        <div class="cancelled-text">
+            This order has been cancelled or rejected by the shop owner. Please contact customer support if you have questions.
+        </div>
+    </div>
+
+    <div class="track-grid">
+        <!-- Vertical Timeline Card -->
+        <div class="track-card">
+            <h3 class="track-card-title">📦 Order Progress</h3>
+            
+            <div class="timeline-vertical">
+                <div class="timeline-progress-line-vert" id="progress-line-vert"></div>
+
+                <div class="timeline-step-vert" id="step-placed">
+                    <div class="step-circle-vert">📋</div>
+                    <div class="step-content-vert">
+                        <h4 class="step-title-vert">Order Placed</h4>
+                        <p class="step-desc-vert">We have successfully received your order request.</p>
+                    </div>
+                </div>
+
+                <div class="timeline-step-vert" id="step-accepted">
+                    <div class="step-circle-vert">🤝</div>
+                    <div class="step-content-vert">
+                        <h4 class="step-title-vert">Accepted by Shop</h4>
+                        <p class="step-desc-vert">The shop owner has reviewed and accepted your order.</p>
+                    </div>
+                </div>
+
+                <div class="timeline-step-vert" id="step-preparing">
+                    <div class="step-circle-vert">⚙️</div>
+                    <div class="step-content-vert">
+                        <h4 class="step-title-vert">Processing</h4>
+                        <p class="step-desc-vert">Your items are being selected and packed by the store staff.</p>
+                    </div>
+                </div>
+
+                <div class="timeline-step-vert" id="step-ready">
+                    <div class="step-circle-vert">📦</div>
+                    <div class="step-content-vert">
+                        <h4 class="step-title-vert">Ready</h4>
+                        <p class="step-desc-vert">Your package is packed, billed, and ready for dispatch.</p>
+                    </div>
+                </div>
+
+                <div class="timeline-step-vert" id="step-delivery">
+                    <div class="step-circle-vert">🚚</div>
+                    <div class="step-content-vert">
+                        <h4 class="step-title-vert">Out for Delivery</h4>
+                        <p class="step-desc-vert">A delivery partner is on the way to your shipping address.</p>
+                    </div>
+                </div>
+
+                <div class="timeline-step-vert" id="step-delivered">
+                    <div class="step-circle-vert">✅</div>
+                    <div class="step-content-vert">
+                        <h4 class="step-title-vert">Delivered</h4>
+                        <p class="step-desc-vert">Order successfully delivered to your doorstep. Enjoy!</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Current Badge Display -->
+            <div class="current-badge-wrap">
+                <div class="current-badge-lbl">Current Live Status</div>
+                <span class="status-badge-new" id="current-status-badge">
+                    {{ order.get('status', 'Pending') }}
+                </span>
+            </div>
+
+            <!-- Auto Refresh Note -->
+            <div class="sync-indicator">
+                <span class="sync-spinner">🔄</span>
+                <span>Auto-syncing in real-time</span>
+                <span id="refresh-counter" style="color: var(--primary-green); font-weight:800;">10s</span>
+            </div>
+        </div>
+
+        <!-- Receipt & Details Card -->
+        <div>
+            <div class="track-card">
+                <h3 class="track-card-title">🏪 Shop & Receipt Details</h3>
+                <div class="receipt-row">
+                    <span class="receipt-lbl">Shop Name</span>
+                    <span class="receipt-val">{{ order.get('shop', 'N/A') }}</span>
+                </div>
+                <div class="receipt-row">
+                    <span class="receipt-lbl">Customer Name</span>
+                    <span class="receipt-val">{{ order.get('customer_name') or order.get('user', 'N/A') }}</span>
+                </div>
+                {% if order.get('phone') and order.get('phone') != 'Not Provided' %}
+                <div class="receipt-row">
+                    <span class="receipt-lbl">Contact Number</span>
+                    <span class="receipt-val">{{ order.get('phone') }}</span>
+                </div>
+                {% endif %}
+                {% if order.get('address') and order.get('address') != 'Not Provided' %}
+                <div class="receipt-row" style="flex-direction:column; align-items:flex-start; gap:6px;">
+                    <span class="receipt-lbl">Delivery Address</span>
+                    <span class="receipt-val" style="text-align:left; font-weight:600; font-size:0.85rem; color:#475569;">{{ order.get('address') }}</span>
+                </div>
+                {% endif %}
+                <div class="receipt-row">
+                    <span class="receipt-lbl">Order Date</span>
+                    <span class="receipt-val">{{ order.get('timestamp_str', 'N/A') }}</span>
+                </div>
+                <div class="receipt-row">
+                    <span class="receipt-lbl">Total Paid / Due</span>
+                    <span class="receipt-val orange">₹{{ order.get('total') or order.get('TotalAmount') or 0 }}</span>
+                </div>
+            </div>
+
+            <!-- Items summary breakdown -->
+            {% if order.get('items') %}
+            <div class="track-card">
+                <h3 class="track-card-title">🛍️ Items List</h3>
+                <div class="item-receipt-list">
+                    {% for item in order['items'] %}
+                    <div class="item-receipt-row">
+                        <span class="item-receipt-name">{{ item.name }}</span>
+                        <span class="item-receipt-qty">× {{ item.qty_str or item.qty or '1' }}</span>
+                        <span class="item-receipt-price">₹{{ (item.price * item.qty) if item.price else '—' }}</span>
+                    </div>
+                    {% endfor %}
+                    <div class="receipt-row" style="border-top: 2px solid var(--border-light); margin-top:12px; padding-top:16px;">
+                        <span class="receipt-lbl" style="font-weight:900; color:var(--text-dark);">Total Amount</span>
+                        <span class="receipt-val orange" style="font-size:1.25rem;">₹{{ order.get('total') or order.get('TotalAmount') or 0 }}</span>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+
+<script>
+// Status step lookup index
+const STATUS_STEPS = {
+    'Pending':          0,
+    'placed':           0,
+    'Accepted':         1,
+    'Preparing':        2,
+    'Processing':       2,
+    'Ready':            3,
+    'Out for Delivery': 4,
+    'Delivered':        5,
+    'Rejected':         -1,
+    'Cancelled':        -1
+};
+
+const STATUS_BADGE_CLASS = {
+    'Pending':          'badge-pending-new',
+    'placed':           'badge-pending-new',
+    'Accepted':         'badge-accepted-new',
+    'Preparing':        'badge-preparing-new',
+    'Processing':       'badge-preparing-new',
+    'Ready':            'badge-ready-new',
+    'Out for Delivery': 'badge-delivery-new',
+    'Delivered':        'badge-delivered-new',
+    'Rejected':         'badge-cancelled-new',
+    'Cancelled':        'badge-cancelled-new',
+};
+
+const STEP_IDS = ['step-placed','step-accepted','step-preparing','step-ready','step-delivery','step-delivered'];
+const PROGRESS_HEIGHTS = ['0%', '20%', '40%', '60%', '80%', '100%'];
+
+let currentStatus = "{{ order.get('status', 'Pending') }}";
+const orderId     = "{{ order._id }}";
+
+function applyStatus(status) {
+    const stepIdx = STATUS_STEPS[status] !== undefined ? STATUS_STEPS[status] : 0;
+    const isCancelled = status === 'Cancelled' || status === 'Rejected';
+
+    if (isCancelled) {
+        document.getElementById('cancelled-banner').style.display = 'flex';
+        document.getElementById('eta-card').style.display = 'none';
+
+        STEP_IDS.forEach((id) => {
+            const el = document.getElementById(id);
+            if (el) {
+                el.classList.remove('step-done', 'step-active');
+                el.style.opacity = '0.5';
+            }
+        });
+
+        const line = document.getElementById('progress-line-vert');
+        if (line) line.style.height = '0%';
+    } else {
+        document.getElementById('cancelled-banner').style.display = 'none';
+        document.getElementById('eta-card').style.display = 'flex';
+
+        STEP_IDS.forEach((id, i) => {
+            const el = document.getElementById(id);
+            if (el) {
+                el.style.opacity = '1';
+                el.classList.remove('step-done', 'step-active');
+                if (i < stepIdx)       el.classList.add('step-done');
+                else if (i === stepIdx) el.classList.add('step-active');
+            }
+        });
+
+        const line = document.getElementById('progress-line-vert');
+        if (line) line.style.height = PROGRESS_HEIGHTS[stepIdx] || '0%';
+    }
+
+    const badge = document.getElementById('current-status-badge');
+    badge.className = 'status-badge-new ' + (STATUS_BADGE_CLASS[status] || 'badge-pending-new');
+    
+    const icons = {
+        'Pending':          '⏳',
+        'placed':           '⏳',
+        'Accepted':         '🟢',
+        'Preparing':        '🔵',
+        'Processing':       '🔵',
+        'Ready':            '🟣',
+        'Out for Delivery': '🚚',
+        'Delivered':        '✅',
+        'Rejected':         '❌',
+        'Cancelled':        '❌'
+    };
+    
+    const labels = {
+        'Pending':          'Pending',
+        'placed':           'Pending',
+        'Accepted':         'Accepted',
+        'Preparing':        'Processing',
+        'Processing':       'Processing',
+        'Ready':            'Ready',
+        'Out for Delivery': 'Out for Delivery',
+        'Delivered':        'Delivered',
+        'Rejected':         'Cancelled',
+        'Cancelled':        'Cancelled'
+    };
+    
+    badge.textContent = (icons[status] || '') + ' ' + (labels[status] || status);
+}
+
+// Render on page load
+applyStatus(currentStatus);
+
+// Countdown timer and live status syncing
+let countdown = 10;
+const counterEl = document.getElementById('refresh-counter');
+
+async function pollStatus() {
+    try {
+        const res  = await fetch('/api/order_status/' + orderId);
+        const data = await res.json();
+        if (data.success && data.status !== currentStatus) {
+            currentStatus = data.status;
+            applyStatus(currentStatus);
+            if (data.estimated_delivery) {
+                document.getElementById('eta-value').textContent = data.estimated_delivery;
+            }
+        }
+    } catch (e) { /* silent fail */ }
+}
+
+setInterval(() => {
+    countdown--;
+    if (counterEl) counterEl.textContent = countdown + 's';
+    if (countdown <= 0) {
+        countdown = 10;
+        pollStatus();
+    }
+}, 1000);
+
+pollStatus();
+</script>
+{% include 'footer.html' %}
+</body>
+</html>

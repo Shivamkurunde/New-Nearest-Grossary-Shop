@@ -1,0 +1,897 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Shop Owner Dashboard | Nearest Grocery Shop</title>
+    <meta name="description" content="Manage your grocery shop orders, update order statuses and track revenue.">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <style>
+        /* Modern Premium CSS Styles for Shop Owner Dashboard */
+        :root {
+            --primary-green: var(--green);
+            --primary-green-dark: var(--green-dark);
+            --border-light: var(--border);
+            --bg-light: var(--bg);
+        }
+
+        body {
+            background-color: var(--bg);
+            color: var(--text);
+            transition: background-color var(--transition), color var(--transition);
+        }
+
+        .dash-page {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 24px 16px;
+            font-family: 'Inter', sans-serif;
+            color: var(--text);
+        }
+
+        /* Shop Control Banner Card */
+        .shop-banner-card {
+            background: var(--card-bg);
+            border-radius: 16px;
+            padding: 20px 24px;
+            box-shadow: var(--shadow);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 16px;
+            margin-bottom: 24px;
+            border: 1px solid var(--border);
+        }
+
+        .shop-banner-info h2 {
+            font-size: 1.5rem;
+            font-weight: 800;
+            margin: 0 0 6px 0;
+            color: var(--primary-green);
+        }
+
+        .shop-banner-info p {
+            margin: 0;
+            color: var(--text-muted);
+            font-size: 0.9rem;
+            font-weight: 600;
+        }
+
+        /* Stats Grid */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 16px;
+            margin-bottom: 28px;
+        }
+
+        .stat-card {
+            background: var(--card-bg);
+            border-radius: 16px;
+            padding: 20px;
+            box-shadow: var(--shadow);
+            border: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-lg);
+        }
+
+        .stat-emoji-box {
+            font-size: 2rem;
+            width: 48px;
+            height: 48px;
+            background: var(--bg);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .stat-card.green-theme .stat-emoji-box { background: var(--primary-green-light); color: var(--primary-green); }
+        .stat-card.orange-theme .stat-emoji-box { background: var(--accent-color-light); color: var(--accent-color); }
+        .stat-card.blue-theme .stat-emoji-box { background: rgba(59, 130, 246, 0.1); color: #3b82f6; }
+        .stat-card.purple-theme .stat-emoji-box { background: rgba(139, 92, 246, 0.1); color: #8b5cf6; }
+
+        .stat-details {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .stat-num-val {
+            font-size: 1.6rem;
+            font-weight: 900;
+            color: var(--text);
+        }
+
+        .stat-label-title {
+            font-size: 0.8rem;
+            font-weight: 700;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        /* Dashboard Master Table Block */
+        .dash-card {
+            background: var(--card-bg);
+            border-radius: 16px;
+            box-shadow: var(--shadow);
+            border: 1px solid var(--border);
+            overflow: hidden;
+            margin-bottom: 24px;
+        }
+
+        /* Reference Design Green Header */
+        .dash-header-green-bar {
+            background: var(--primary-green-dark);
+            color: #fff;
+            padding: 16px 24px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 16px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .dash-header-green-bar h2 {
+            font-size: 1.3rem;
+            font-weight: 700;
+            margin: 0;
+            color: #fff;
+            font-family: 'Inter', sans-serif;
+        }
+
+        .filter-select-dropdown {
+            background: var(--card-bg);
+            color: var(--text-main);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 8px 16px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            cursor: pointer;
+            outline: none;
+            min-width: 140px;
+            box-shadow: var(--shadow-sm);
+        }
+
+        /* Modern Table Styles */
+        .table-responsive {
+            overflow-x: auto;
+        }
+
+        .orders-modern-table {
+            width: 100%;
+            border-collapse: collapse;
+            text-align: left;
+        }
+
+        .orders-modern-table th {
+            padding: 16px 24px;
+            font-size: 0.85rem;
+            font-weight: 700;
+            color: var(--text-muted);
+            border-bottom: 1.5px solid var(--border);
+            background: var(--bg);
+        }
+
+        .orders-modern-table td {
+            padding: 16px 24px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: var(--text);
+            border-bottom: 1px solid var(--border);
+        }
+
+        .orders-modern-table tbody tr {
+            cursor: pointer;
+            transition: background 0.15s ease;
+        }
+
+        .orders-modern-table tbody tr:hover {
+            background: var(--bg);
+        }
+
+        .order-row-selected {
+            background-color: var(--primary-green-light) !important;
+            border-left: 4px solid var(--primary-green) !important;
+        }
+
+        /* Status Colors from Mockup */
+        .status-badge-custom {
+            font-weight: 700;
+            font-size: 0.88rem;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .status-col-new { color: #f97316; }
+        .status-col-accepted { color: #16a34a; }
+        .status-col-processing { color: #2563eb; }
+        .status-col-ready { color: #9333ea; }
+        .status-col-delivery { color: #d97706; }
+        .status-col-delivered { color: #16a34a; }
+        .status-col-rejected { color: #dc2626; }
+
+        /* Action Icon Circles */
+        .circle-action-btn {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            border: none;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: all 0.2s ease;
+            margin-right: 6px;
+        }
+
+        .circle-action-btn-accept {
+            background: #16a34a;
+            color: #fff;
+        }
+
+        .circle-action-btn-accept:hover {
+            background: #15803d;
+            transform: scale(1.08);
+        }
+
+        .circle-action-btn-reject {
+            background: #ef4444;
+            color: #fff;
+        }
+
+        .circle-action-btn-reject:hover {
+            background: #b91c1c;
+            transform: scale(1.08);
+        }
+
+        .circle-action-btn-view {
+            background: var(--bg);
+            color: var(--text-muted);
+            border: 1px solid var(--border);
+        }
+
+        .circle-action-btn-view:hover {
+            background: var(--primary-green-light);
+            color: var(--primary-green-dark);
+            transform: scale(1.08);
+        }
+
+        /* Order Details Card */
+        .order-details-card {
+            background: var(--card-bg);
+            border-radius: 16px;
+            border: 1px solid var(--border);
+            box-shadow: var(--shadow);
+            padding: 24px;
+            margin-top: 24px;
+            display: none;
+        }
+
+        .details-card-header-title {
+            font-size: 1.1rem;
+            font-weight: 800;
+            color: var(--text);
+            margin-top: 0;
+            margin-bottom: 20px;
+            border-bottom: 1.5px solid var(--border);
+            padding-bottom: 12px;
+        }
+
+        .details-two-columns {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 40px;
+            margin-bottom: 24px;
+        }
+
+        @media (max-width: 768px) {
+            .details-two-columns {
+                grid-template-columns: 1fr;
+                gap: 24px;
+            }
+        }
+
+        .column-section-title {
+            font-size: 0.95rem;
+            font-weight: 800;
+            color: var(--text);
+            margin-bottom: 16px;
+        }
+
+        .detail-info-row {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 12px;
+            font-size: 0.9rem;
+            color: var(--text-muted);
+        }
+
+        .detail-info-icon {
+            color: var(--text-muted);
+            font-size: 1.1rem;
+            width: 20px;
+            display: inline-block;
+            text-align: center;
+        }
+
+        .items-list-box {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            border-left: 2px solid var(--border);
+            padding-left: 16px;
+        }
+
+        .item-row-pair {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 0.9rem;
+            color: var(--text);
+            font-weight: 600;
+            padding: 6px 0;
+            border-bottom: 1px dashed var(--border);
+        }
+
+        .item-name-txt {
+            color: var(--text);
+        }
+
+        .item-qty-txt {
+            color: var(--text-muted);
+            font-weight: 700;
+        }
+
+        .more-items-badge-pill {
+            background: var(--accent-color-light);
+            color: var(--accent-color-dark);
+            font-size: 0.8rem;
+            font-weight: 700;
+            padding: 6px 12px;
+            border-radius: 20px;
+            display: inline-block;
+            margin-top: 8px;
+            border: 1px solid var(--accent-color-light);
+        }
+
+        /* Details Bottom Buttons */
+        .bottom-actions-buttons-row {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+            border-top: 1.5px solid var(--border);
+            padding-top: 20px;
+        }
+
+        .dashboard-btn-action {
+            padding: 10px 22px;
+            border-radius: 8px;
+            font-weight: 700;
+            font-size: 0.85rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            border: 1.5px solid transparent;
+            background: var(--card-bg);
+            display: none;
+        }
+
+        .btn-act-accept {
+            background: var(--primary-green);
+            color: #fff;
+            border-color: var(--primary-green);
+        }
+
+        .btn-act-accept:hover {
+            background: var(--primary-green-dark);
+            border-color: var(--primary-green-dark);
+        }
+
+        .btn-act-reject {
+            color: #ef4444;
+            border-color: #ef4444;
+            background: var(--card-bg);
+        }
+
+        .btn-act-reject:hover {
+            background: rgba(239, 68, 68, 0.1);
+        }
+
+        .btn-act-processing {
+            color: #3b82f6;
+            border-color: #3b82f6;
+            background: var(--card-bg);
+        }
+
+        .btn-act-processing:hover {
+            background: rgba(59, 130, 246, 0.1);
+        }
+
+        .btn-act-ready {
+            color: #8b5cf6;
+            border-color: #8b5cf6;
+            background: var(--card-bg);
+        }
+
+        .btn-act-ready:hover {
+            background: rgba(139, 92, 246, 0.1);
+        }
+
+        .btn-act-delivery {
+            color: var(--accent-color);
+            border-color: var(--accent-color);
+            background: var(--card-bg);
+        }
+
+        .btn-act-delivery:hover {
+            background: var(--accent-color-light);
+        }
+
+        .btn-act-delivered {
+            color: var(--primary-green);
+            border-color: var(--primary-green);
+            background: var(--card-bg);
+        }
+
+        .btn-act-delivered:hover {
+            background: var(--primary-green-light);
+        }
+    </style>
+</head>
+<body>
+
+<!-- Loading overlay -->
+<div class="loading-overlay" id="loading-overlay">
+    <div class="spinner"></div>
+</div>
+
+<!-- Toast notification -->
+<div class="toast" id="toast"></div>
+
+{% include 'header.html' %}
+
+
+<div class="dash-page">
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+                <div class="alert alert-{{ category }}">{{ message }}</div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+
+    <!-- Shop Control Banner -->
+    <div class="shop-banner-card">
+        <div class="shop-banner-info">
+            <h2>🏪 {{ shop.name }}</h2>
+            <p>Owner: <strong>{{ shop.owner }}</strong> &nbsp;·&nbsp; Rating: ⭐ {{ shop.get('rating', '0.0') }}</p>
+        </div>
+        <div class="shop-banner-actions" style="display: flex; gap: 16px; align-items: center;">
+            <span id="shop-status-badge" class="shop-status-badge {{ 'open' if shop.status == 'Open' else 'closed' }}" style="padding: 8px 16px; border-radius: 20px; font-size: 0.9rem; font-weight: 700; background: var(--bg); border: 1px solid var(--border); box-shadow: var(--shadow-sm); color: #000;">
+                {{ '🟢 Currently Open' if shop.status == 'Open' else '🔴 Currently Closed' }}
+            </span>
+            <button id="toggle-shop-btn" onclick="toggleShopStatus()" class="btn {{ 'btn-outline' if shop.status == 'Open' else 'btn-green' }}" style="padding: 8px 24px; font-size: 0.9rem; font-weight:800; border-radius: 20px; border: 2px solid var(--primary-green);">
+                {{ 'Close Shop' if shop.status == 'Open' else 'Open Shop' }}
+            </button>
+        </div>
+    </div>
+
+    <!-- Stats Row -->
+    {% set all_orders_raw = (orders + uploaded_orders) %}
+    <div class="stats-grid">
+        <div class="stat-card green-theme">
+            <div class="stat-emoji-box">📦</div>
+            <div class="stat-details">
+                <div class="stat-num-val">{{ all_orders_raw|length }}</div>
+                <div class="stat-label-title">Total Orders</div>
+            </div>
+        </div>
+        <div class="stat-card orange-theme">
+            <div class="stat-emoji-box">⏳</div>
+            <div class="stat-details">
+                <div class="stat-num-val">{{ pending_count }}</div>
+                <div class="stat-label-title">Pending</div>
+            </div>
+        </div>
+        <div class="stat-card blue-theme">
+            <div class="stat-emoji-box">💰</div>
+            <div class="stat-details">
+                <div class="stat-num-val">₹{{ "{:,.2f}".format(total_rev) }}</div>
+                <div class="stat-label-title">Revenue</div>
+            </div>
+        </div>
+        <div class="stat-card purple-theme">
+            <div class="stat-emoji-box">✅</div>
+            <div class="stat-details">
+                <div class="stat-num-val">{{ delivered_count }}</div>
+                <div class="stat-label-title">Delivered</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Dashboard Container -->
+    <div class="dash-card">
+        <!-- Reference Design Header Bar -->
+        <div class="dash-header-green-bar">
+            <h2>Shop Owner Dashboard</h2>
+            <select class="filter-select-dropdown">
+                <option value="All Orders">All Orders</option>
+                <option value="New Orders">New Orders</option>
+                <option value="Processing">Processing</option>
+                <option value="Ready">Ready</option>
+                <option value="Delivered">Delivered</option>
+            </select>
+        </div>
+
+        <!-- Orders Table -->
+        <div class="table-responsive">
+            <table class="orders-modern-table">
+                <thead>
+                    <tr>
+                        <th>Order ID</th>
+                        <th>Customer</th>
+                        <th>Items</th>
+                        <th>Total</th>
+                        <th>Status</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                {% if all_orders_raw %}
+                    {% set all_orders_sorted = all_orders_raw | sort(attribute='timestamp', reverse=True) %}
+                    {% for order in all_orders_sorted %}
+                    {% set st = order.get('status', 'Pending') %}
+                    {% set display_status = {
+                        'Pending':          'New Order',
+                        'placed':           'New Order',
+                        'Accepted':         'Accepted',
+                        'Preparing':        'Processing',
+                        'Processing':       'Processing',
+                        'Ready':            'Ready',
+                        'Out for Delivery': 'Out for Delivery',
+                        'Delivered':        'Delivered',
+                        'Rejected':         'Rejected',
+                        'Cancelled':        'Cancelled'
+                    }.get(st, st) %}
+                    
+                    {% set status_class = {
+                        'Pending':          'status-col-new',
+                        'placed':           'status-col-new',
+                        'Accepted':         'status-col-accepted',
+                        'Preparing':        'status-col-processing',
+                        'Processing':       'status-col-processing',
+                        'Ready':            'status-col-ready',
+                        'Out for Delivery': 'status-col-delivery',
+                        'Delivered':        'status-col-delivered',
+                        'Rejected':         'status-col-rejected',
+                        'Cancelled':        'status-col-rejected'
+                    }.get(st, '') %}
+                    
+                    <tr class="order-row" id="order-row-{{ order._id }}"
+                        onclick="selectOrder('{{ order._id }}')"
+                        data-id="{{ order._id }}"
+                        data-status-key="{{ st }}"
+                        data-customer="{{ order.customer_name or order.user }}"
+                        data-phone="{{ order.phone or 'Not Provided' }}"
+                        data-address="{{ order.address or 'Not Provided' }}"
+                        data-total="₹{{ '{:,.2f}'.format(order.total or order.TotalAmount or 0) }}"
+                        data-status="{{ display_status }}"
+                        data-items='{{ order['items'] | tojson | safe }}'
+                        data-is-uploaded="{{ 'true' if order.is_uploaded else 'false' }}"
+                        data-uploaded-file-path="{{ order.uploaded_file_path or '' }}"
+                        data-uploaded-file="{{ order.uploaded_file or '' }}">
+                        
+                        <td style="font-weight: 700;">#ORD{{ order._id[:6] | upper }}</td>
+                        <td>{{ order.customer_name or order.user }}</td>
+                        <td>{{ order['items'] | length }}</td>
+                        <td>₹{{ "{:,.2f}".format(order.total or order.TotalAmount or 0) }}</td>
+                        <td>
+                            <span class="status-badge-custom {{ status_class }}">
+                                {% if display_status == 'New Order' %}🟠
+                                {% elif display_status == 'Accepted' %}🟢
+                                {% elif display_status == 'Processing' %}🔵
+                                {% elif display_status == 'Ready' %}🟣
+                                {% elif display_status == 'Out for Delivery' %}🚚
+                                {% elif display_status == 'Delivered' %}✅
+                                {% elif display_status == 'Rejected' or display_status == 'Cancelled' %}❌
+                                {% endif %}
+                                {{ display_status }}
+                            </span>
+                        </td>
+                        <td>
+                            {% if st == 'Pending' or st == 'placed' %}
+                                <button class="circle-action-btn circle-action-btn-accept" onclick="event.stopPropagation(); quickUpdateStatus('{{ order._id }}', 'Accepted')" title="Accept Order">✓</button>
+                                <button class="circle-action-btn circle-action-btn-reject" onclick="event.stopPropagation(); quickUpdateStatus('{{ order._id }}', 'Rejected')" title="Reject Order">✕</button>
+                            {% endif %}
+                            <button class="circle-action-btn circle-action-btn-view" onclick="event.stopPropagation(); selectOrder('{{ order._id }}')" title="View Order">👁</button>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                {% else %}
+                    <tr class="no-orders-row">
+                        <td colspan="6" style="text-align:center; padding: 48px; color: var(--muted);">
+                            <div style="font-size:2.5rem; margin-bottom:12px;">📭</div>
+                            No orders received yet.
+                        </td>
+                    </tr>
+                {% endif %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Reference Design Order Details Card -->
+    <div class="order-details-card" id="order-detail-card">
+        <h3 class="details-card-header-title">Order Details - <span id="details-order-id">#ORD123456</span></h3>
+        
+        <div class="details-two-columns">
+            <!-- Customer details column -->
+            <div>
+                <h4 class="column-section-title">Customer Details</h4>
+                <div class="detail-info-row">
+                    <span class="detail-info-icon">👤</span>
+                    <span id="details-customer-name">Rahul Kumar</span>
+                </div>
+                <div class="detail-info-row">
+                    <span class="detail-info-icon">📞</span>
+                    <span id="details-customer-phone">+91 98765 43210</span>
+                </div>
+                <div class="detail-info-row">
+                    <span class="detail-info-icon">📍</span>
+                    <span id="details-customer-address">221B Baker Street, London, UK</span>
+                </div>
+                <!-- Dynamic uploaded list file holder -->
+                <div id="details-file-container" style="margin-top:12px;"></div>
+            </div>
+
+            <!-- Order items column -->
+            <div>
+                <h4 class="column-section-title">Order Items</h4>
+                <div class="items-list-box" id="details-items-list">
+                    <!-- Dynamic rendering of items -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Action Row -->
+        <div class="bottom-actions-buttons-row">
+            <button class="dashboard-btn-action btn-act-accept" id="btn-detail-accept" onclick="detailActionClick('Accepted')">Accept Order</button>
+            <button class="dashboard-btn-action btn-act-reject" id="btn-detail-reject" onclick="detailActionClick('Rejected')">Reject Order</button>
+            <button class="dashboard-btn-action btn-act-processing" id="btn-detail-processing" onclick="detailActionClick('Processing')">Mark Processing</button>
+            <button class="dashboard-btn-action btn-act-ready" id="btn-detail-ready" onclick="detailActionClick('Ready')">Mark Ready</button>
+            <button class="dashboard-btn-action btn-act-delivery" id="btn-detail-delivery" onclick="detailActionClick('Out for Delivery')">Mark Out for Delivery</button>
+            <button class="dashboard-btn-action btn-act-delivered" id="btn-detail-delivered" onclick="detailActionClick('Delivered')">Mark Delivered</button>
+        </div>
+    </div>
+</div>
+
+{% include 'footer.html' %}
+
+<script>
+function toggleShopStatus() {
+    const btn = document.getElementById('toggle-shop-btn');
+    const badge = document.getElementById('shop-status-badge');
+    const originalText = btn.innerHTML;
+    btn.innerHTML = 'Updating...';
+    btn.disabled = true;
+    
+    fetch('/api/toggle_shop_status', { method: 'POST' })
+    .then(res => res.json())
+    .then(data => {
+        btn.disabled = false;
+        if (data.success) {
+            if (data.new_status === 'Open') {
+                badge.innerHTML = '🟢 Currently Open';
+                badge.className = 'shop-status-badge open';
+                btn.innerHTML = 'Close Shop';
+                btn.className = 'btn btn-outline';
+            } else {
+                badge.innerHTML = '🔴 Currently Closed';
+                badge.className = 'shop-status-badge closed';
+                btn.innerHTML = 'Open Shop';
+                btn.className = 'btn btn-green';
+            }
+        } else {
+            alert(data.message || 'Error updating status');
+            btn.innerHTML = originalText;
+        }
+    })
+    .catch(err => {
+        btn.disabled = false;
+        btn.innerHTML = originalText;
+        alert('Network error occurred.');
+    });
+}
+
+let currentSelectedOrderId = null;
+
+function selectOrder(orderId) {
+    const row = document.getElementById('order-row-' + orderId);
+    if (!row) return;
+
+    // Highlight selected row
+    document.querySelectorAll('.order-row').forEach(r => r.classList.remove('order-row-selected'));
+    row.classList.add('order-row-selected');
+
+    currentSelectedOrderId = orderId;
+
+    const customer = row.dataset.customer;
+    const phone = row.dataset.phone;
+    const address = row.dataset.address;
+    const total = row.dataset.total;
+    const status = row.dataset.status;
+    const stKey = row.dataset.statusKey;
+    const isUploaded = row.dataset.isUploaded === 'true';
+    const filePath = row.dataset.uploadedFilePath;
+    const fileName = row.dataset.uploadedFile;
+    const items = JSON.parse(row.dataset.items);
+
+    // Update details card
+    document.getElementById('details-order-id').textContent = '#ORD' + orderId.substring(0, 6).toUpperCase();
+    document.getElementById('details-customer-name').textContent = customer;
+    document.getElementById('details-customer-phone').textContent = phone;
+    document.getElementById('details-customer-address').textContent = address;
+
+    // Render items list
+    const itemsContainer = document.getElementById('details-items-list');
+    itemsContainer.innerHTML = '';
+    
+    // Render first 3 items as in reference, plus a badge for additional items
+    const displayItems = items.slice(0, 3);
+    displayItems.forEach(item => {
+        const qtyText = item.qty_str || (item.qty ? item.qty + ' units' : '1');
+        itemsContainer.innerHTML += `
+            <div class="item-row-pair">
+                <span class="item-name-txt">${item.name}</span>
+                <span class="item-qty-txt">${qtyText}</span>
+            </div>
+        `;
+    });
+
+    if (items.length > 3) {
+        itemsContainer.innerHTML += `
+            <div style="text-align: left;">
+                <span class="more-items-badge-pill">+${items.length - 3} more items</span>
+            </div>
+        `;
+    }
+
+    // Handle Uploaded File Link if present
+    const fileContainer = document.getElementById('details-file-container');
+    if (isUploaded && filePath) {
+        fileContainer.innerHTML = `
+            <div class="detail-info-row" style="margin-top: 14px; background: var(--bg); padding: 8px 12px; border-radius: 8px; border: 1px solid var(--border); display: inline-flex;">
+                <span class="detail-info-icon">📄</span>
+                <span><strong>Uploaded File:</strong> <a href="${filePath}" download style="color: var(--primary-green); font-weight: 700; text-decoration: none; display: inline-flex; align-items:center; gap:4px; margin-left:4px;">📥 Download</a></span>
+            </div>
+        `;
+    } else {
+        fileContainer.innerHTML = '';
+    }
+
+    // Toggle Action Buttons based on status keys
+    // Hide all first
+    document.querySelectorAll('.dashboard-btn-action').forEach(btn => btn.style.display = 'none');
+
+    // Show actions based on status keys
+    if (stKey === 'Pending' || stKey === 'placed') {
+        document.getElementById('btn-detail-accept').style.display = 'block';
+        document.getElementById('btn-detail-reject').style.display = 'block';
+    } else if (stKey === 'Accepted') {
+        document.getElementById('btn-detail-processing').style.display = 'block';
+    } else if (stKey === 'Preparing' || stKey === 'Processing') {
+        document.getElementById('btn-detail-ready').style.display = 'block';
+    } else if (stKey === 'Ready') {
+        document.getElementById('btn-detail-delivery').style.display = 'block';
+    } else if (stKey === 'Out for Delivery') {
+        document.getElementById('btn-detail-delivered').style.display = 'block';
+    }
+
+    // Display the details card
+    document.getElementById('order-detail-card').style.display = 'block';
+}
+
+function detailActionClick(status) {
+    if (currentSelectedOrderId) {
+        quickUpdateStatus(currentSelectedOrderId, status);
+    }
+}
+
+// Client-side filtering by status
+document.querySelector('.filter-select-dropdown').addEventListener('change', function(e) {
+    const filter = e.target.value;
+    const rows = document.querySelectorAll('.order-row');
+    let visibleCount = 0;
+    let firstVisibleRow = null;
+
+    rows.forEach(row => {
+        const stKey = row.dataset.statusKey;
+        let show = false;
+        if (filter === 'All Orders') {
+            show = true;
+        } else if (filter === 'New Orders' && (stKey === 'Pending' || stKey === 'placed')) {
+            show = true;
+        } else if (filter === 'Processing' && stKey === 'Preparing') {
+            show = true;
+        } else if (filter === 'Ready' && stKey === 'Accepted') {
+            show = true;
+        } else if (filter === 'Delivered' && stKey === 'Delivered') {
+            show = true;
+        }
+        
+        row.style.display = show ? '' : 'none';
+        if (show) {
+            visibleCount++;
+            if (!firstVisibleRow) {
+                firstVisibleRow = row;
+            }
+        }
+    });
+
+    // Auto-select first visible row if filter changes, or hide details if none visible
+    if (firstVisibleRow) {
+        selectOrder(firstVisibleRow.dataset.id);
+    } else {
+        document.getElementById('order-detail-card').style.display = 'none';
+    }
+});
+
+window.addEventListener('DOMContentLoaded', () => {
+    // Select the first order row if it exists
+    const firstRow = document.querySelector('.order-row');
+    if (firstRow) {
+        selectOrder(firstRow.dataset.id);
+    }
+});
+
+function showToast(msg, ok = true) {
+    const toast = document.getElementById('toast');
+    toast.textContent = msg;
+    toast.style.background = ok ? 'var(--green-dark)' : '#c62828';
+    toast.classList.add('show');
+    setTimeout(() => toast.classList.remove('show'), 3000);
+}
+
+async function quickUpdateStatus(orderId, newStatus) {
+    const overlay = document.getElementById('loading-overlay');
+    if (overlay) overlay.classList.add('show');
+
+    try {
+        const res = await fetch('/api/update_order_status', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ order_id: orderId, status: newStatus })
+        });
+        const data = await res.json();
+
+        if (data.success) {
+            showToast('✅ Status updated successfully!');
+            setTimeout(() => window.location.reload(), 800);
+        } else {
+            if (overlay) overlay.classList.remove('show');
+            showToast('❌ Error: ' + (data.message || 'Update failed'), false);
+        }
+    } catch (e) {
+        if (overlay) overlay.classList.remove('show');
+        showToast('❌ Network error. Please try again.', false);
+    }
+}
+</script>
+</body>
+</html>

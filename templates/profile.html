@@ -1,0 +1,968 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Profile Hub | Nearest Grocery Shop</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <style>
+        /* Modern Profile Hub Styles matching Reference Design exactly */
+        :root {
+            --primary-green: var(--green);
+            --primary-green-dark: var(--green-dark);
+            --border-light: var(--border);
+            --bg-light: var(--bg);
+            --text-main: var(--text-main);
+            --text-muted: var(--text-muted);
+        }
+
+        body {
+            background-color: var(--bg-light);
+            font-family: 'Inter', sans-serif;
+            color: var(--text-main);
+            margin: 0;
+            padding: 0;
+        }
+
+        /* Sticky Navigation Bar with perfect alignment */
+        .navbar-custom {
+            background: #fff;
+            padding: 0 40px;
+            height: 70px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1.5px solid #f1f5f9;
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+        }
+
+        .navbar-logo {
+            font-size: 1.35rem;
+            font-weight: 800;
+            color: var(--primary-green);
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            letter-spacing: -0.5px;
+        }
+
+        .navbar-logo svg {
+            width: 24px;
+            height: 24px;
+            stroke: var(--primary-green);
+        }
+
+        .navbar-links {
+            display: flex;
+            align-items: center;
+            gap: 28px;
+            height: 100%;
+        }
+
+        .navbar-link-item {
+            color: #475569;
+            font-weight: 600;
+            text-decoration: none;
+            font-size: 0.95rem;
+            transition: color 0.2s ease;
+            position: relative;
+            display: flex;
+            align-items: center;
+            height: 100%;
+        }
+
+        .navbar-link-item:hover {
+            color: var(--primary-green);
+        }
+
+        .navbar-link-item.active {
+            color: var(--primary-green);
+            font-weight: 700;
+        }
+
+        .navbar-link-item.active::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 3px;
+            background: var(--primary-green);
+            border-radius: 3px 3px 0 0;
+        }
+
+        .navbar-actions {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            height: 100%;
+        }
+
+        .nav-icon-badge-btn {
+            background: none;
+            border: none;
+            cursor: pointer;
+            position: relative;
+            color: #475569;
+            padding: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            transition: background-color 0.2s;
+        }
+
+        .nav-icon-badge-btn:hover {
+            background-color: #f1f5f9;
+        }
+
+        .nav-icon-badge-btn svg {
+            width: 20px;
+            height: 20px;
+            stroke: currentColor;
+        }
+
+        .nav-icon-badge-dot {
+            position: absolute;
+            top: 4px;
+            right: 4px;
+            width: 8px;
+            height: 8px;
+            background: #f97316;
+            border-radius: 50%;
+            border: 2px solid #fff;
+        }
+
+        .nav-profile-user {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-weight: 600;
+            color: #334155;
+            font-size: 0.95rem;
+        }
+
+        .nav-profile-user-avatar {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background: #e2e8f0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #64748b;
+            border: 1.5px solid #cbd5e1;
+        }
+
+        .nav-profile-user-avatar svg {
+            width: 16px;
+            height: 16px;
+            stroke: currentColor;
+            fill: none;
+        }
+
+        .btn-logout-custom {
+            border: 1.5px solid var(--primary-green);
+            color: var(--primary-green);
+            background: transparent;
+            padding: 8px 18px;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 0.9rem;
+            text-decoration: none;
+            transition: all 0.2s ease;
+        }
+
+        .btn-logout-custom:hover {
+            background: #f0fdf4;
+            color: var(--primary-green-dark);
+            border-color: var(--primary-green-dark);
+        }
+
+        /* Profile Layout Content */
+        .profile-page-wrapper {
+            max-width: 1100px;
+            margin: 0 auto;
+            padding: 30px 24px;
+        }
+
+        .back-nav-link {
+            color: var(--primary-green);
+            font-weight: 600;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            margin-bottom: 20px;
+            font-size: 0.95rem;
+            transition: color 0.2s;
+        }
+
+        .back-nav-link:hover {
+            color: var(--primary-green-dark);
+        }
+
+        .profile-title-text {
+            font-size: 2rem;
+            font-weight: 800;
+            color: var(--text-main);
+            margin: 0 0 24px 0;
+            letter-spacing: -0.5px;
+        }
+
+        /* Welcome Banner Card */
+        .welcome-banner-card {
+            background: #f4faf6;
+            border: 1px solid #c8e6c9;
+            border-radius: 12px;
+            padding: 24px 32px;
+            margin-bottom: 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 4px 12px rgba(76, 175, 80, 0.02);
+            flex-wrap: wrap;
+            gap: 20px;
+        }
+
+        .welcome-banner-left {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .welcome-banner-waving-hand {
+            width: 44px;
+            height: 44px;
+            background: #15803d;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.3rem;
+            color: #fff;
+            flex-shrink: 0;
+        }
+
+        .welcome-banner-info h2 {
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: #166534;
+            margin: 0 0 4px 0;
+        }
+
+        .welcome-banner-info p {
+            margin: 0;
+            color: #15803d;
+            font-size: 0.95rem;
+            font-weight: 500;
+        }
+
+        .welcome-banner-right {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* Two-Column Grid */
+        .profile-grid-sections {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            align-items: stretch;
+        }
+
+        .profile-box-card {
+            background: var(--card-bg);
+            border-radius: 12px;
+            padding: 30px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.01);
+            border: 1px solid var(--border-light);
+            display: flex;
+            flex-direction: column;
+        }
+ 
+        /* Card Header with Icons */
+        .card-header-layout {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 24px;
+        }
+ 
+        .card-circle-icon {
+            width: 36px;
+            height: 36px;
+            background: var(--primary-green-light);
+            color: var(--primary-green);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+ 
+        .card-circle-icon svg {
+            width: 18px;
+            height: 18px;
+            stroke: currentColor;
+            fill: none;
+        }
+ 
+        .card-header-layout h3 {
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: var(--text-main);
+            margin: 0;
+        }
+ 
+        /* Form Inputs & Fields */
+        .form-row-group {
+            margin-bottom: 20px;
+        }
+ 
+        .form-row-group label {
+            display: block;
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: var(--text-muted);
+            margin-bottom: 8px;
+        }
+ 
+        .input-icon-wrapper-custom {
+            position: relative;
+            display: flex;
+            align-items: center;
+            width: 100%;
+        }
+ 
+        .input-inline-icon {
+            position: absolute;
+            left: 16px;
+            color: var(--text-muted);
+            display: flex;
+            align-items: center;
+            pointer-events: none;
+        }
+ 
+        .input-inline-icon svg {
+            width: 18px;
+            height: 18px;
+            stroke: currentColor;
+            fill: none;
+        }
+ 
+        .form-control-custom-theme {
+            width: 100%;
+            padding: 14px 16px 14px 46px;
+            border-radius: 8px;
+            border: 1px solid var(--border-light);
+            font-size: 0.95rem;
+            font-weight: 500;
+            color: var(--text-main);
+            outline: none;
+            transition: all 0.2s ease;
+            background: var(--card-bg);
+            box-sizing: border-box;
+        }
+ 
+        .form-control-custom-theme:focus {
+            border-color: var(--primary-green);
+            box-shadow: 0 0 0 4px rgba(46, 125, 50, 0.08);
+        }
+ 
+        .form-control-custom-theme.readonly-style {
+            background-color: var(--bg-light);
+            border-color: var(--border-light);
+            color: var(--text-muted);
+            cursor: not-allowed;
+        }
+
+        /* Save Changes Button - Bottom-aligned inside the Right card */
+        .btn-save-orange-gradient {
+            width: 100%;
+            background: linear-gradient(135deg, #ea580c, #c2410c);
+            color: #fff;
+            border: none;
+            padding: 14px;
+            border-radius: 8px;
+            font-size: 0.95rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            box-shadow: 0 4px 12px rgba(234, 88, 12, 0.15);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            margin-top: auto; /* Pushes to bottom in flex-column card */
+        }
+
+        .btn-save-orange-gradient:hover {
+            background: linear-gradient(135deg, #d97706, #ea580c);
+            box-shadow: 0 6px 16px rgba(234, 88, 12, 0.25);
+            transform: translateY(-1px);
+        }
+
+        .btn-save-orange-gradient:active {
+            transform: translateY(0);
+        }
+
+        .btn-save-orange-gradient svg {
+            width: 18px;
+            height: 18px;
+            stroke: currentColor;
+            fill: none;
+        }
+
+        @media (max-width: 768px) {
+            .navbar-custom {
+                padding: 0 20px;
+            }
+            .profile-grid-sections {
+                grid-template-columns: 1fr;
+                gap: 24px;
+            }
+            .welcome-banner-card {
+                padding: 20px;
+                flex-direction: column;
+                align-items: flex-start;
+            }
+            .welcome-banner-right {
+                align-self: center;
+            }
+            .btn-save-orange-gradient {
+                margin-top: 10px;
+            }
+        }
+
+        /* Dark mode overrides */
+        html[data-theme="dark"] .welcome-banner-card {
+            background: #062016;
+            border-color: #044e2b;
+            color: #a7f3d0;
+        }
+        html[data-theme="dark"] .welcome-banner-info h2 {
+            color: #34d399;
+        }
+        html[data-theme="dark"] .welcome-banner-info p {
+            color: #a7f3d0;
+        }
+        html[data-theme="dark"] .welcome-banner-right svg rect[fill="white"] {
+            fill: var(--card-bg);
+            stroke: var(--border);
+        }
+        html[data-theme="dark"] .welcome-banner-right svg rect[fill="#e2e8f0"] {
+            fill: var(--border);
+        }
+        html[data-theme="dark"] .welcome-banner-right svg circle[fill="#e8f5e9"] {
+            fill: var(--bg);
+        }
+    </style>
+</head>
+<body>
+
+{% include 'header.html' %}
+
+
+<div class="profile-page-wrapper">
+    <form method="post" action="/profile">
+        <!-- Back Navigation Link -->
+        <a href="/" class="back-nav-link">← Back to Home</a>
+        
+        <h1 class="profile-title-text">My Profile Hub</h1>
+        
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ category }}" style="margin-bottom: 24px; border-radius: 8px;">
+                        {{ message }}
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        <!-- Welcome Banner Card -->
+        <div class="welcome-banner-card">
+            <div class="welcome-banner-left">
+                <div class="welcome-banner-waving-hand">👋</div>
+                <div class="welcome-banner-info">
+                    <h2>Welcome, {{ current_user.username }}!</h2>
+                    <p>Manage your account details and delivery address.</p>
+                </div>
+            </div>
+            <div class="welcome-banner-right">
+                <svg width="160" height="110" viewBox="0 0 160 110" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <!-- Leaves background left -->
+                    <path d="M35 90 C 40 75, 48 55, 52 45" stroke="#a5d6a7" stroke-width="1.5" stroke-linecap="round" opacity="0.6"/>
+                    <path d="M35 90 C 25 80, 20 68, 24 60 C 28 60, 32 70, 37 80" fill="#a5d6a7" opacity="0.6"/>
+                    <path d="M40 75 C 34 66, 31 52, 36 46 C 40 48, 43 56, 44 67" fill="#a5d6a7" opacity="0.6"/>
+                    <path d="M45 60 C 42 52, 42 40, 46 36 C 49 40, 49 47, 48 54" fill="#a5d6a7" opacity="0.6"/>
+
+                    <!-- Leaves background right -->
+                    <path d="M125 90 C 120 75, 112 55, 108 45" stroke="#a5d6a7" stroke-width="1.5" stroke-linecap="round" opacity="0.6"/>
+                    <path d="M125 90 C 135 80, 140 68, 136 60 C 132 60, 128 70, 123 80" fill="#a5d6a7" opacity="0.6"/>
+                    <path d="M120 75 C 126 66, 129 52, 124 46 C 120 48, 117 56, 116 67" fill="#a5d6a7" opacity="0.6"/>
+                    
+                    <!-- Document Card -->
+                    <rect x="48" y="10" width="64" height="84" rx="8" fill="white" stroke="#c8e6c9" stroke-width="1" filter="drop-shadow(0px 2px 4px rgba(0, 0, 0, 0.03))"/>
+                    
+                    <!-- Avatar inside Card -->
+                    <circle cx="80" cy="30" r="12" fill="#e8f5e9"/>
+                    <!-- User Head -->
+                    <circle cx="80" cy="27" r="4.5" fill="#4caf50"/>
+                    <!-- User Shoulders -->
+                    <path d="M72 38 C 72 34.5, 75.5 32.5, 80 32.5 C 84.5 32.5, 88 34.5, 88 38 Z" fill="#4caf50"/>
+                    
+                    <!-- Content lines inside Card -->
+                    <rect x="60" y="52" width="40" height="3" rx="1.5" fill="#e2e8f0"/>
+                    <rect x="60" y="60" width="28" height="3" rx="1.5" fill="#e2e8f0"/>
+                    <rect x="60" y="68" width="18" height="3" rx="1.5" fill="#e2e8f0"/>
+                    
+                    <!-- Shield circle badge on bottom right of Card -->
+                    <circle cx="104" cy="80" r="12" fill="#4caf50" stroke="white" stroke-width="2"/>
+                    <!-- Checkmark -->
+                    <path d="M99 80 L102 83 L109 76" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+            </div>
+        </div>
+
+        <!-- Cards Container -->
+        <div class="profile-grid-sections">
+            
+            <!-- Left Side: Account Details -->
+            <div class="profile-box-card">
+                <div class="card-header-layout">
+                    <div class="card-circle-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                            <circle cx="12" cy="7" r="4"></circle>
+                        </svg>
+                    </div>
+                    <h3>Account Details</h3>
+                </div>
+                
+                <div class="form-row-group">
+                    <label>Username</label>
+                    <div class="input-icon-wrapper-custom">
+                        <span class="input-inline-icon">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                                <circle cx="12" cy="7" r="4"></circle>
+                            </svg>
+                        </span>
+                        <input type="text" name="username" class="form-control-custom-theme" value="{{ current_user.username }}" required placeholder="Username">
+                    </div>
+                </div>
+
+                <div class="form-row-group">
+                    <label>Email Address</label>
+                    <div class="input-icon-wrapper-custom">
+                        <span class="input-inline-icon">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path>
+                                <polyline points="22,6 12,13 2,6"></polyline>
+                            </svg>
+                        </span>
+                        <input type="email" name="email" class="form-control-custom-theme" value="{{ current_user.email }}" required placeholder="Email Address">
+                    </div>
+                </div>
+
+                <div class="form-row-group">
+                    <label>Role</label>
+                    <div class="input-icon-wrapper-custom">
+                        <span class="input-inline-icon">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+                            </svg>
+                        </span>
+                        <input type="text" class="form-control-custom-theme readonly-style" value="{{ current_user.role | capitalize }}" readonly>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Side: Delivery Address -->
+            <div class="profile-box-card">
+                <div class="card-header-layout">
+                    <div class="card-circle-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
+                            <circle cx="12" cy="10" r="3"></circle>
+                        </svg>
+                    </div>
+                    <h3>Delivery Address</h3>
+                </div>
+
+                <div class="address-mode-buttons" style="display: flex; gap: 10px; margin-bottom: 24px;">
+                    <button type="button" id="btn-detect-location" style="flex: 1; padding: 10px; border-radius: 8px; border: 1px solid var(--primary-green); background: #e8f5e9; color: var(--primary-green); font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; transition: 0.2s;">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>
+                        Detect Address
+                    </button>
+                    <button type="button" id="btn-manual-address" style="flex: 1; padding: 10px; border-radius: 8px; border: 1px solid var(--primary-green); background: var(--primary-green); color: white; font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; transition: 0.2s;">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
+                        Enter Manually
+                    </button>
+                </div>
+
+                <div class="form-row-group">
+                    <label>Full Name</label>
+                    <div class="input-icon-wrapper-custom">
+                        <span class="input-inline-icon">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                                <circle cx="12" cy="7" r="4"></circle>
+                            </svg>
+                        </span>
+                        <input type="text" name="delivery_name" class="form-control-custom-theme" 
+                               value="{{ current_user.delivery_name or '' }}" placeholder="Full Name" minlength="3" required>
+                    </div>
+                </div>
+
+                <div class="form-row-group">
+                    <label>Mobile Number</label>
+                    <div class="input-icon-wrapper-custom">
+                        <span class="input-inline-icon">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path>
+                            </svg>
+                        </span>
+                        <input type="text" name="mobile" class="form-control-custom-theme" 
+                               value="{{ current_user.mobile or '' }}" placeholder="Mobile Number" pattern="[0-9]{10}" maxlength="10" title="Must be exactly 10 digits" oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0, 10);" required>
+                    </div>
+                </div>
+
+                <div class="form-row-group">
+                    <label>Pincode</label>
+                    <div style="display: flex; gap: 10px;">
+                        <input type="text" id="input-pincode" name="delivery_pincode" class="form-control-custom-theme" 
+                               value="{{ current_user.delivery_pincode or '' }}" placeholder="6-digit Pincode" pattern="[0-9]{6}" maxlength="6" required style="flex: 2; padding-left: 16px;" oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0, 6);">
+                        <button type="button" id="btn-fetch-pincode" style="flex: 1; border-radius: 8px; border: none; background: #e2e8f0; color: #334155; font-weight: 600; cursor: pointer; transition: 0.2s;">Detect Details</button>
+                    </div>
+                </div>
+
+                <div class="profile-grid-sections" id="row-state-district" style="grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 20px;">
+                    <div id="col-state">
+                        <label style="font-size: 0.85rem; font-weight: 600; color: var(--text-muted); margin-bottom: 8px; display: block;">State</label>
+                        <select id="input-state" name="delivery_state" class="form-control-custom-theme" required style="padding-left: 16px; width: 100%; -webkit-appearance: auto; appearance: auto; background-color: white;">
+                            <option value="{{ current_user.delivery_state or '' }}" selected>{{ current_user.delivery_state or 'Select State' }}</option>
+                        </select>
+                    </div>
+                    <div id="col-district" style="display: none;">
+                        <label style="font-size: 0.85rem; font-weight: 600; color: var(--text-muted); margin-bottom: 8px; display: block;">District</label>
+                        <select id="input-district" name="delivery_district" class="form-control-custom-theme" required style="padding-left: 16px; width: 100%; -webkit-appearance: auto; appearance: auto; background-color: white;">
+                            <option value="{{ current_user.delivery_district or '' }}" selected>{{ current_user.delivery_district or 'Select District' }}</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="profile-grid-sections" id="row-taluka-village" style="grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 20px; display: none;">
+                    <div id="col-taluka">
+                        <label style="font-size: 0.85rem; font-weight: 600; color: var(--text-muted); margin-bottom: 8px; display: block;">Taluka</label>
+                        <input type="text" id="input-taluka" name="delivery_taluka" class="form-control-custom-theme" value="{{ current_user.delivery_taluka or '' }}" placeholder="Taluka" required style="padding-left: 16px;">
+                    </div>
+                    <div id="col-village" style="display: none;">
+                        <label style="font-size: 0.85rem; font-weight: 600; color: var(--text-muted); margin-bottom: 8px; display: block;">Village / City</label>
+                        <input type="text" id="input-village" name="delivery_village" class="form-control-custom-theme" value="{{ current_user.delivery_village or '' }}" placeholder="Village / City" required style="padding-left: 16px;">
+                    </div>
+                </div>
+
+                <div class="form-row-group" id="row-street" style="display: none;">
+                    <label>House No. / Street Address</label>
+                    <input type="text" id="input-street" name="delivery_street" class="form-control-custom-theme" value="{{ current_user.delivery_street or '' }}" placeholder="Apartment, Street name, Landmark" minlength="3" required style="padding-left: 16px;">
+                </div>
+
+                <!-- Save Changes Button -->
+                <button type="submit" class="btn-save-orange-gradient">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
+                        <polyline points="17 21 17 13 7 13 7 21"></polyline>
+                        <polyline points="7 3 7 8 15 8"></polyline>
+                    </svg>
+                    <span>Save Changes</span>
+                </button>
+            </div>
+            
+        </div>
+    </form>
+</div>
+
+{% include 'footer.html' %}
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const btnDetect = document.getElementById('btn-detect-location');
+        const btnManual = document.getElementById('btn-manual-address');
+        const btnFetchPincode = document.getElementById('btn-fetch-pincode');
+
+        // Fetch India States and Districts for Dropdowns
+        let indiaDataMap = {};
+        fetch('https://raw.githubusercontent.com/sab99r/Indian-States-And-Districts/master/states-and-districts.json')
+            .then(res => res.json())
+            .then(data => {
+                const stateSelect = document.getElementById('input-state');
+                const savedState = stateSelect.value;
+                stateSelect.innerHTML = '<option value="" disabled ' + (savedState && savedState !== 'Select State' ? '' : 'selected') + '>Select State</option>';
+                
+                data.states.forEach(stateObj => {
+                    indiaDataMap[stateObj.state] = stateObj.districts;
+                    let opt = document.createElement('option');
+                    opt.value = stateObj.state;
+                    opt.innerHTML = stateObj.state;
+                    if(stateObj.state === savedState) opt.selected = true;
+                    stateSelect.appendChild(opt);
+                });
+                
+                if(savedState && savedState !== 'Select State' && indiaDataMap[savedState]) {
+                    populateDistricts(savedState, document.getElementById('input-district').value);
+                }
+            });
+
+        function populateDistricts(stateName, savedDist = '') {
+            const distSelect = document.getElementById('input-district');
+            distSelect.innerHTML = '<option value="" disabled ' + (savedDist && savedDist !== 'Select District' ? '' : 'selected') + '>Select District</option>';
+            if(indiaDataMap[stateName]) {
+                indiaDataMap[stateName].forEach(dist => {
+                    let opt = document.createElement('option');
+                    opt.value = dist;
+                    opt.innerHTML = dist;
+                    if(dist === savedDist) opt.selected = true;
+                    distSelect.appendChild(opt);
+                });
+            }
+        }
+        
+        function setSelectSafely(selectId, val) {
+            if (!val) return;
+            const el = document.getElementById(selectId);
+            if (!el) return;
+            if (el.tagName === 'SELECT') {
+                let found = Array.from(el.options).some(o => o.value && o.value.toLowerCase() === val.toLowerCase());
+                if (found) {
+                    el.value = Array.from(el.options).find(o => o.value && o.value.toLowerCase() === val.toLowerCase()).value;
+                } else {
+                    let opt = document.createElement('option');
+                    opt.value = val;
+                    opt.innerHTML = val;
+                    el.appendChild(opt);
+                    el.value = val;
+                }
+                if (selectId === 'input-state') populateDistricts(el.value);
+            } else {
+                el.value = val;
+            }
+        }
+
+        function updateProgressiveFields() {
+            const iState = document.getElementById('input-state');
+            const iDistrict = document.getElementById('input-district');
+            const iTaluka = document.getElementById('input-taluka');
+            const iVillage = document.getElementById('input-village');
+            
+            const colDistrict = document.getElementById('col-district');
+            const rowTalukaVillage = document.getElementById('row-taluka-village');
+            const colVillage = document.getElementById('col-village');
+            const rowStreet = document.getElementById('row-street');
+
+            if (iState && iState.value.trim().length > 0) {
+                colDistrict.style.display = 'block';
+            } else {
+                colDistrict.style.display = 'none';
+                rowTalukaVillage.style.display = 'none';
+                rowStreet.style.display = 'none';
+                return;
+            }
+            
+            if (iDistrict && iDistrict.value.trim().length > 0) {
+                rowTalukaVillage.style.display = 'grid';
+            } else {
+                rowTalukaVillage.style.display = 'none';
+                rowStreet.style.display = 'none';
+                return;
+            }
+
+            if (iTaluka && iTaluka.value.trim().length > 0) {
+                colVillage.style.display = 'block';
+            } else {
+                colVillage.style.display = 'none';
+                rowStreet.style.display = 'none';
+                return;
+            }
+
+            if (iVillage && iVillage.value.trim().length > 0) {
+                rowStreet.style.display = 'block';
+            } else {
+                rowStreet.style.display = 'none';
+            }
+        }
+
+        document.addEventListener('input', function(e) {
+            if (['input-state', 'input-district', 'input-taluka', 'input-village'].includes(e.target.id)) {
+                updateProgressiveFields();
+            }
+        });
+        document.addEventListener('change', function(e) {
+            if (e.target.id === 'input-state') {
+                populateDistricts(e.target.value);
+                updateProgressiveFields();
+            }
+            if (e.target.id === 'input-district' || e.target.id === 'input-village') {
+                updateProgressiveFields();
+            }
+        });
+
+        // Initialize state on page load
+        updateProgressiveFields();
+        
+        // Pincode API Logic
+        btnFetchPincode.addEventListener('click', async function() {
+            const pin = document.getElementById('input-pincode').value;
+            if(pin.length !== 6) {
+                alert("Please enter a valid 6-digit Pincode first.");
+                return;
+            }
+            
+            const originalText = this.innerText;
+            this.innerText = "⏳...";
+            this.disabled = true;
+
+            try {
+                const res = await fetch(`/api/pincode/${pin}`);
+                const data = await res.json();
+                
+                if(data && data[0] && data[0].Status === "Success") {
+                    const postOffices = data[0].PostOffice;
+                    const po = postOffices[0];
+                    
+                    setSelectSafely('input-state', po.State);
+                    setSelectSafely('input-district', po.District);
+                    document.getElementById('input-taluka').value = po.Block !== "NA" ? po.Block : po.District;
+                    
+                    // Create dropdown for Village
+                    let selectHTML = `<select id="input-village" name="delivery_village" class="form-control-custom-theme" required style="padding-left: 16px; width: 100%; -webkit-appearance: auto; appearance: auto; background-color: white;">`;
+                    selectHTML += `<option value="" disabled selected>Select your Village/City</option>`;
+                    postOffices.forEach(office => {
+                        selectHTML += `<option value="${office.Name}">${office.Name}</option>`;
+                    });
+                    selectHTML += `</select>`;
+                    
+                    const oldInput = document.getElementById('input-village');
+                    oldInput.outerHTML = selectHTML;
+                    
+                    updateProgressiveFields();
+                    
+                    document.getElementById('input-state').style.backgroundColor = '#f0fdf4';
+                    document.getElementById('input-district').style.backgroundColor = '#f0fdf4';
+                    document.getElementById('input-taluka').style.backgroundColor = '#f0fdf4';
+                    setTimeout(() => {
+                        document.getElementById('input-state').style.backgroundColor = '';
+                        document.getElementById('input-district').style.backgroundColor = '';
+                        document.getElementById('input-taluka').style.backgroundColor = '';
+                    }, 1500);
+
+                } else {
+                    alert("Invalid Pincode or details not found.");
+                }
+            } catch(e) {
+                alert("Error fetching pincode: " + e.message);
+                console.error(e);
+            } finally {
+                this.innerText = originalText;
+                this.disabled = false;
+            }
+        });
+
+        // Toggle Manual Mode
+        btnManual.addEventListener('click', () => {
+            btnManual.style.background = 'var(--primary-green)';
+            btnManual.style.color = 'white';
+            btnDetect.style.background = '#e8f5e9';
+            btnDetect.style.color = 'var(--primary-green)';
+        });
+
+        // Detect Location Logic
+        btnDetect.addEventListener('click', function() {
+            const originalText = this.innerHTML;
+            this.innerHTML = '⏳ Detecting...';
+            this.disabled = true;
+            
+            btnDetect.style.background = 'var(--primary-green)';
+            btnDetect.style.color = 'white';
+            btnManual.style.background = '#e8f5e9';
+            btnManual.style.color = 'var(--primary-green)';
+
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(async function(position) {
+                    const lat = position.coords.latitude;
+                    const lon = position.coords.longitude;
+                    
+                    try {
+                        const response = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}`);
+                        const data = await response.json();
+                        
+                        if (data && data.address) {
+                            const addr = data.address;
+                            const street = addr.road || addr.suburb || addr.neighbourhood || '';
+                            const city = addr.city || addr.town || addr.village || addr.county || '';
+                            const state = addr.state || '';
+                            const district = addr.state_district || addr.county || '';
+                            const pincode = addr.postcode || '';
+                            
+                            document.getElementById('input-pincode').value = pincode;
+                            setSelectSafely('input-state', state);
+                            setSelectSafely('input-district', district);
+                            document.getElementById('input-taluka').value = city;
+                            
+                            // Reset village to text input if it was a select
+                            const oldVillage = document.getElementById('input-village');
+                            if(oldVillage.tagName === 'SELECT') {
+                                oldVillage.outerHTML = `<input type="text" id="input-village" name="delivery_village" class="form-control-custom-theme" required style="padding-left: 16px;">`;
+                            }
+                            document.getElementById('input-village').value = city;
+                            document.getElementById('input-street').value = street;
+                            
+                            updateProgressiveFields();
+                            
+                            // Highlight inputs briefly
+                            const inputs = ['pincode', 'state', 'district', 'taluka', 'village', 'street'];
+                            inputs.forEach(id => {
+                                const el = document.getElementById(`input-${id}`);
+                                if(el) {
+                                    el.style.backgroundColor = '#f0fdf4';
+                                    el.style.transition = 'background-color 0.5s';
+                                    setTimeout(() => el.style.backgroundColor = '', 1500);
+                                }
+                            });
+                        } else {
+                            alert("Could not detect address details. Please enter manually.");
+                        }
+                    } catch (error) {
+                        console.error("Error detecting address:", error);
+                        alert("Error detecting address: " + error.message);
+                    } finally {
+                        btnDetect.innerHTML = originalText;
+                        btnDetect.disabled = false;
+                    }
+                }, function(error) {
+                    alert("Location access denied. Please allow location permissions in your browser or enter manually.");
+                    btnDetect.innerHTML = originalText;
+                    btnDetect.disabled = false;
+                    
+                    btnManual.style.background = 'var(--primary-green)';
+                    btnManual.style.color = 'white';
+                    btnDetect.style.background = '#e8f5e9';
+                    btnDetect.style.color = 'var(--primary-green)';
+                });
+            } else {
+                alert("Geolocation is not supported by your browser.");
+                btnDetect.innerHTML = originalText;
+                btnDetect.disabled = false;
+            }
+        });
+    });
+</script>
+</body>
+</html>

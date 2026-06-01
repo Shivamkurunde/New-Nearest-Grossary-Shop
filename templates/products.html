@@ -1,0 +1,650 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ shop_name }} – Grocery Items | Nearest Grocery Shop</title>
+    <meta name="description" content="Browse and order fresh grocery items from {{ shop_name }}.">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <style>
+        .products-page { min-height: 100vh; display: flex; flex-direction: column; }
+
+        /* Hero banner */
+        .products-hero {
+            background: linear-gradient(135deg, #e65100 0%, #bf360c 100%);
+            padding: 44px 60px 36px;
+            color: #fff;
+            position: relative;
+            overflow: hidden;
+        }
+        .products-hero::before {
+            content: '';
+            position: absolute;
+            width: 400px; height: 400px;
+            background: rgba(255,255,255,0.04);
+            border-radius: 50%;
+            top: -150px; right: -80px;
+        }
+
+        .products-breadcrumb {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.85rem;
+            opacity: 0.75;
+            margin-bottom: 16px;
+            flex-wrap: wrap;
+        }
+        .products-breadcrumb a { color: #fff; }
+        .products-breadcrumb a:hover { opacity: 1; text-decoration: underline; }
+        .products-breadcrumb span { opacity: 0.5; }
+
+        .products-hero h1 {
+            font-size: 2.2rem;
+            font-weight: 900;
+            margin-bottom: 8px;
+        }
+        .products-hero p { font-size: 0.95rem; opacity: 0.85; }
+
+        /* Main */
+        .products-main {
+            flex: 1;
+            padding: 50px 60px;
+            max-width: 1200px;
+            margin: 0 auto;
+            width: 100%;
+        }
+
+        .section-heading {
+            font-size: 1.55rem;
+            font-weight: 900;
+            color: var(--text-main);
+            margin-bottom: 6px;
+        }
+        .section-sub {
+            font-size: 0.92rem;
+            color: var(--text-muted);
+            margin-bottom: 30px;
+        }
+
+        /* Items Grid */
+        .items-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+            gap: 24px;
+            margin-bottom: 70px;
+        }
+
+        .item-card {
+            background: #fff;
+            border-radius: 18px;
+            overflow: hidden;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.06);
+            border: 1.5px solid #f0f0f0;
+            transition: all 0.3s ease;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .item-card:hover {
+            transform: translateY(-6px);
+            box-shadow: 0 16px 45px rgba(0,0,0,0.1);
+            border-color: var(--accent-color);
+        }
+
+        .item-img-wrap {
+            position: relative;
+            overflow: hidden;
+        }
+
+        .item-img {
+            width: 100%;
+            height: 190px;
+            object-fit: cover;
+            transition: transform 0.4s ease;
+            display: block;
+        }
+
+        .item-card:hover .item-img { transform: scale(1.06); }
+
+        .item-badge {
+            position: absolute;
+            top: 12px;
+            left: 12px;
+            font-size: 0.7rem;
+            font-weight: 800;
+            padding: 4px 10px;
+            border-radius: 50px;
+            color: #fff;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .item-stock {
+            position: absolute;
+            top: 12px;
+            right: 12px;
+            font-size: 0.7rem;
+            font-weight: 700;
+            padding: 4px 10px;
+            border-radius: 50px;
+            background: rgba(255,255,255,0.95);
+        }
+
+        .item-stock.in-stock { color: #2e7d32; }
+        .item-stock.low-stock { color: #e65100; }
+
+        .item-body {
+            padding: 18px;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .item-cat {
+            font-size: 0.75rem;
+            font-weight: 700;
+            color: var(--primary-color);
+            text-transform: uppercase;
+            letter-spacing: 0.8px;
+            margin-bottom: 5px;
+        }
+
+        .item-name {
+            font-size: 1.05rem;
+            font-weight: 800;
+            color: var(--text-main);
+            margin-bottom: 5px;
+        }
+
+        .item-desc {
+            font-size: 0.82rem;
+            color: var(--text-muted);
+            line-height: 1.5;
+            margin-bottom: 14px;
+            flex: 1;
+        }
+
+        .item-footer {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+        }
+
+        .item-price {
+            font-size: 1.2rem;
+            font-weight: 900;
+            color: var(--accent-color);
+        }
+
+        .item-unit {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            font-weight: 500;
+        }
+
+        .btn-add-cart {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            background: var(--primary-color);
+            color: #fff;
+            border: none;
+            padding: 9px 14px;
+            border-radius: 10px;
+            font-size: 0.82rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.25s ease;
+            font-family: var(--font-main);
+        }
+
+        .btn-add-cart:hover {
+            background: var(--primary-hover);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(46,125,50,0.35);
+        }
+
+        .btn-add-cart.added {
+            background: #388e3c;
+        }
+
+        /* ── Upload Section ─────────────────────────────────────── */
+        .upload-section {
+            background: linear-gradient(135deg, #fff8e1, #fff3e0);
+            border: 2px dashed #ffcc80;
+            border-radius: 20px;
+            padding: 40px;
+            text-align: center;
+            margin-bottom: 50px;
+        }
+
+        .upload-icon {
+            width: 70px;
+            height: 70px;
+            background: linear-gradient(135deg, #fff3e0, #ffe0b2);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 18px;
+            font-size: 1.8rem;
+        }
+
+        .upload-section h3 {
+            font-size: 1.3rem;
+            font-weight: 800;
+            color: var(--text-main);
+            margin-bottom: 6px;
+        }
+
+        .upload-section p {
+            font-size: 0.9rem;
+            color: var(--text-muted);
+            margin-bottom: 24px;
+        }
+
+        .upload-form {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 16px;
+            max-width: 480px;
+            margin: 0 auto;
+        }
+
+        .file-input-wrap {
+            width: 100%;
+            position: relative;
+        }
+
+        .file-input-label {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            width: 100%;
+            padding: 14px 20px;
+            background: #fff;
+            border: 1.5px solid #ffcc80;
+            border-radius: 12px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: var(--text-muted);
+            cursor: pointer;
+            transition: all 0.25s ease;
+        }
+
+        .file-input-label:hover {
+            border-color: var(--accent-color);
+            color: var(--accent-color);
+        }
+
+        #file-input { position: absolute; opacity: 0; width: 0; height: 0; }
+
+        .file-chosen {
+            font-size: 0.82rem;
+            color: var(--primary-color);
+            font-weight: 600;
+            display: none;
+        }
+
+        .btn-upload {
+            padding: 13px 36px;
+            background: linear-gradient(135deg, var(--accent-color), #bf360c);
+            color: #fff;
+            border: none;
+            border-radius: 12px;
+            font-size: 0.95rem;
+            font-weight: 800;
+            cursor: pointer;
+            transition: all 0.25s ease;
+            font-family: var(--font-main);
+        }
+
+        .btn-upload:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 24px rgba(230,81,0,0.35);
+        }
+
+        /* Uploaded gallery */
+        .uploaded-gallery {
+            margin-top: 30px;
+        }
+        .uploaded-gallery h4 {
+            font-size: 1rem;
+            font-weight: 700;
+            color: var(--text-main);
+            margin-bottom: 14px;
+        }
+        .gallery-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+            gap: 12px;
+            justify-items: center;
+        }
+        .gallery-img {
+            width: 100%;
+            max-width: 130px;
+            height: 100px;
+            object-fit: cover;
+            border-radius: 10px;
+            border: 2px solid #ffe0b2;
+            transition: transform 0.25s;
+        }
+        .gallery-img:hover { transform: scale(1.05); }
+
+        @media (max-width: 768px) {
+            .products-hero { padding: 36px 20px 28px; }
+            .products-hero h1 { font-size: 1.7rem; }
+            .products-main { padding: 30px 16px; }
+            .items-grid { grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); }
+        }
+    </style>
+</head>
+<body>
+    <div class="products-page">
+        <!-- NAV -->
+        <nav>
+            <a class="logo" href="/">
+                <svg width="40" height="40" viewBox="0 0 40 40" fill="none">
+                    <rect width="40" height="40" rx="10" fill="#e8f5e9"/>
+                    <path d="M10 12h4l4 12h12l3-8H16" stroke="var(--accent-color)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+                    <circle cx="18" cy="28" r="2.5" fill="var(--primary-color)"/>
+                    <circle cx="28" cy="28" r="2.5" fill="var(--primary-color)"/>
+                </svg>
+                <div class="logo-text">
+                    <span class="t1">Nearest</span>
+                    <span class="t2">Grocery Shop</span>
+                </div>
+            </a>
+            <ul class="nav-links">
+                <li><a href="/">Home</a></li>
+                <li><a href="/location">Location</a></li>
+                <li><a href="/shops?location={{ location }}">Shops</a></li>
+                <li><a href="#" class="active">Items</a></li>
+            </ul>
+            {% if current_user %}
+            <a class="nav-login glass-panel" style="padding: 8px 16px; border-radius: 20px;" href="/profile">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--primary-color)" stroke-width="2">
+                    <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/>
+                </svg>
+                {{ current_user.username }}
+            </a>
+            {% endif %}
+        </nav>
+
+        <!-- HERO -->
+        <div class="products-hero">
+            <div class="products-breadcrumb">
+                <a href="/">Home</a><span>›</span>
+                <a href="/location">Location</a><span>›</span>
+                <a href="/shops?location={{ location }}">Shops</a><span>›</span>
+                <strong>{{ shop_name }}</strong>
+            </div>
+            <h1>🛒 {{ shop_name }}</h1>
+            <p>Browse fresh grocery items available at this store and upload your shopping list image.</p>
+        </div>
+
+        <!-- MAIN -->
+        <main class="products-main">
+
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}{% for category, message in messages %}
+                    <div class="alert alert-{{ category }}" style="margin-bottom:24px;">{{ message }}</div>
+                {% endfor %}{% endif %}
+            {% endwith %}
+
+            <h2 class="section-heading">Available Grocery Items</h2>
+            <p class="section-sub">{{ items|length }} items available · Prices are per unit shown</p>
+
+            <div class="items-grid">
+                {% for item in items %}
+                <div class="item-card" id="item-{{ item.id }}">
+                    <div class="item-img-wrap">
+                        <img class="item-img" src="{{ item.image }}" alt="{{ item.name }}" loading="lazy"
+                             onerror="this.src='/static/images/products/placeholder.png'; this.style.objectFit='contain'; this.style.padding='16px';">
+                        {% if item.badge %}
+                        <span class="item-badge" style="background: {{ item.badge_color }};">{{ item.badge }}</span>
+                        {% endif %}
+                        <span class="item-stock {{ 'low-stock' if item.stock == 'Low Stock' else 'in-stock' }}">
+                            {{ item.stock }}
+                        </span>
+                    </div>
+                    <div class="item-body">
+                        <div class="item-cat">{{ item.category }}</div>
+                        <div class="item-name">{{ item.name }}</div>
+                        <div class="item-desc">{{ item.description }}</div>
+                        <div class="item-footer">
+                            <div>
+                                <div class="item-price">₹{{ item.price }}</div>
+                                <div class="item-unit">{{ item.unit }}</div>
+                            </div>
+                            <button class="btn-add-cart" id="add-cart-{{ item.id }}"
+                                onclick="addToCart(this, '{{ item.name }}')">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg>
+                                Add
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+
+            <!-- ── UPLOAD SECTION ─────────────────────────────────── -->
+            <h2 class="section-heading">📷 Upload Your Shopping List</h2>
+            <p class="section-sub">Send us a photo of your handwritten list or a grocery image — we'll process it.</p>
+
+            <div class="upload-section">
+                <div class="upload-icon">📷</div>
+                <h3>Upload an Image</h3>
+                <p>Accepted formats: PNG, JPG, JPEG, GIF, WEBP &nbsp;·&nbsp; Max size: 16 MB</p>
+
+                <div class="upload-form-wrap" style="display:flex;flex-direction:column;align-items:center;gap:14px;max-width:480px;margin:0 auto;">
+                    <div class="file-input-wrap" style="width:100%;position:relative;">
+                        <label class="file-input-label" for="prod-file-input" id="prod-file-label">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                            Choose File (PDF / Image)
+                        </label>
+                        <input type="file" id="prod-file-input" name="grocery_file"
+                               accept=".png,.jpg,.jpeg,.pdf" onchange="prodFileChosen(this)"
+                               style="position:absolute;opacity:0;width:0;height:0;">
+                    </div>
+                    <span class="file-chosen" id="prod-file-chosen" style="font-size:0.82rem;color:#2e7d32;font-weight:600;display:none;"></span>
+                    <button class="btn-upload" id="prod-upload-btn" onclick="prodUpload()" disabled>
+                        🔍 Extract &amp; Find Items
+                    </button>
+                </div>
+
+                <!-- OCR progress & results -->
+                <div id="prod-progress" style="display:none;margin-top:20px;width:100%;max-width:480px;margin-left:auto;margin-right:auto;">
+                    <div style="width:100%;height:8px;background:#ffe0b2;border-radius:50px;overflow:hidden;">
+                        <div id="prod-prog-fill" style="height:100%;background:linear-gradient(90deg,#e65100,#bf360c);border-radius:50px;width:0%;transition:width 0.4s ease;"></div>
+                    </div>
+                    <p id="prod-prog-text" style="font-size:0.82rem;color:#666;margin-top:8px;text-align:center;">Processing…</p>
+                </div>
+
+                <div id="prod-ocr-results" style="display:none;margin-top:24px;text-align:left;border-top:2px solid #ffe0b2;padding-top:20px;">
+                    <div style="display:flex;gap:20px;justify-content:center;margin-bottom:20px;">
+                        <div style="text-align:center;background:#fff;border-radius:14px;padding:16px 28px;box-shadow:0 4px 14px rgba(0,0,0,0.06);border:1.5px solid #e0e0e0;">
+                            <span id="prod-found-cnt" style="display:block;font-size:2.2rem;font-weight:900;color:#2e7d32;">0</span>
+                            <span style="font-size:0.78rem;font-weight:700;color:#666;text-transform:uppercase;">Found</span>
+                        </div>
+                        <div style="text-align:center;background:#fff;border-radius:14px;padding:16px 28px;box-shadow:0 4px 14px rgba(0,0,0,0.06);border:1.5px solid #e0e0e0;">
+                            <span id="prod-missing-cnt" style="display:block;font-size:2.2rem;font-weight:900;color:#c62828;">0</span>
+                            <span style="font-size:0.78rem;font-weight:700;color:#666;text-transform:uppercase;">Not Available</span>
+                        </div>
+                    </div>
+                    <div id="prod-found-list"></div>
+                    <div id="prod-missing-list"></div>
+                </div>
+
+                {% if uploads %}
+                <div class="uploaded-gallery">
+                    <h4>📁 Recently Uploaded ({{ uploads|length }})</h4>
+                    <div class="gallery-grid">
+                        {% for upload in uploads %}
+                        <img class="gallery-img"
+                             src="{{ url_for('static', filename='uploads/' + upload.filename) }}"
+                             alt="{{ upload.original_name }}"
+                             title="{{ upload.original_name }} · by {{ upload.uploaded_by }}">
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+
+        </main>
+
+        <footer style="background: var(--primary-hover); color: #dcedc8; text-align: center; padding: 20px; font-size: 0.88rem;">
+            &copy; 2026 <strong>Nearest Grocery Shop</strong>. All rights reserved.
+        </footer>
+    </div>
+
+    <script>
+        /* ── Products page file chooser ─────────────────────────────────── */
+        function prodFileChosen(input) {
+            const label  = document.getElementById('prod-file-label');
+            const chosen = document.getElementById('prod-file-chosen');
+            const btn    = document.getElementById('prod-upload-btn');
+            const results = document.getElementById('prod-ocr-results');
+
+            if (input.files && input.files[0]) {
+                const file = input.files[0];
+                const ext  = file.name.split('.').pop().toLowerCase();
+                if (!['pdf','jpg','jpeg','png'].includes(ext)) {
+                    alert('Invalid file type. Use PDF, JPG, JPEG, or PNG.');
+                    input.value = '';
+                    btn.disabled = true;
+                    return;
+                }
+                label.textContent = '✅ ' + file.name;
+                label.style.borderColor = '#2e7d32';
+                label.style.color = '#2e7d32';
+                chosen.textContent = (file.size/1024).toFixed(1) + ' KB · ' + ext.toUpperCase();
+                chosen.style.display = 'block';
+                btn.disabled = false;
+                results.style.display = 'none';
+            }
+        }
+
+        /* ── Products page OCR upload ────────────────────────────────────── */
+        function prodUpload() {
+            const fileInput = document.getElementById('prod-file-input');
+            const progress  = document.getElementById('prod-progress');
+            const fill      = document.getElementById('prod-prog-fill');
+            const progText  = document.getElementById('prod-prog-text');
+            const btn       = document.getElementById('prod-upload-btn');
+            const results   = document.getElementById('prod-ocr-results');
+
+            if (!fileInput.files || !fileInput.files[0]) return;
+
+            const fd = new FormData();
+            fd.append('grocery_file', fileInput.files[0]);
+
+            progress.style.display = 'block';
+            results.style.display  = 'none';
+            btn.disabled = true;
+            btn.textContent = '⏳ Processing…';
+            fill.style.width = '20%';
+            progText.textContent = 'Uploading…';
+
+            let pct = 20;
+            const ticker = setInterval(() => {
+                pct = Math.min(pct + 12, 85);
+                fill.style.width = pct + '%';
+                if (pct > 50) progText.textContent = 'Extracting text…';
+                if (pct > 70) progText.textContent = 'Matching items…';
+            }, 400);
+
+            fetch('/api/grocery_ocr', { method: 'POST', body: fd })
+            .then(r => r.json())
+            .then(data => {
+                clearInterval(ticker);
+                fill.style.width = '100%';
+                setTimeout(() => {
+                    progress.style.display = 'none';
+                    btn.disabled = false;
+                    btn.textContent = '🔍 Extract & Find Items';
+
+                    if (!data.success) {
+                        alert('❌ ' + data.message);
+                        return;
+                    }
+
+                    document.getElementById('prod-found-cnt').textContent   = data.found_count;
+                    document.getElementById('prod-missing-cnt').textContent = data.missing_count;
+
+                    const foundList   = document.getElementById('prod-found-list');
+                    const missingList = document.getElementById('prod-missing-list');
+
+                    if (data.found && data.found.length) {
+                        foundList.innerHTML = '<h4 style="font-size:1rem;font-weight:800;margin-bottom:10px;color:#1a1a1a;">✅ Found in Store</h4>'
+                            + '<div style="display:flex;flex-direction:column;gap:8px;">'
+                            + data.found.map(it => `
+                                <div style="display:flex;align-items:center;gap:12px;background:#fff;border-radius:10px;padding:10px 14px;border:1.5px solid #c8e6c9;">
+                                    <img src="${it.image}" alt="${it.name}" style="width:44px;height:44px;object-fit:cover;border-radius:8px;border:1px solid #e0e0e0;"
+                                         onerror="this.src='/static/images/products/placeholder.png';">
+                                    <div style="flex:1;">
+                                        <span style="font-weight:700;font-size:0.9rem;">${it.name}</span><br>
+                                        <span style="color:#e65100;font-size:0.8rem;font-weight:700;">₹${it.price} ${it.unit}</span>
+                                    </div>
+                                </div>`).join('') + '</div>';
+                    } else {
+                        foundList.innerHTML = '';
+                    }
+
+                    if (data.missing && data.missing.length) {
+                        missingList.innerHTML = '<h4 style="font-size:1rem;font-weight:800;margin:14px 0 10px;color:#c62828;">❌ Not Available</h4>'
+                            + '<div style="display:flex;flex-wrap:wrap;gap:8px;">'
+                            + data.missing.map(n => `<span style="background:#ffebee;color:#c62828;border:1px solid #ffcdd2;border-radius:50px;padding:4px 14px;font-size:0.8rem;font-weight:600;">${n}</span>`).join('')
+                            + '</div>';
+                    } else {
+                        missingList.innerHTML = '';
+                    }
+
+                    results.style.display = 'block';
+                    results.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }, 500);
+            })
+            .catch(() => {
+                clearInterval(ticker);
+                progress.style.display = 'none';
+                btn.disabled = false;
+                btn.textContent = '🔍 Extract & Find Items';
+                alert('Network error. Please try again.');
+            });
+        }
+
+        /* ── Simple add-to-cart visual (products page) ───────────────────── */
+        function addToCart(btn, name) {
+            btn.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg> Added!`;
+            btn.classList.add('added');
+            btn.disabled = true;
+
+            const toast = document.createElement('div');
+            toast.textContent = `✔ ${name} added to cart`;
+            Object.assign(toast.style, {
+                position: 'fixed', bottom: '24px', right: '24px',
+                background: '#2e7d32', color: '#fff',
+                padding: '12px 20px', borderRadius: '12px',
+                fontWeight: '700', fontSize: '0.9rem',
+                boxShadow: '0 8px 24px rgba(0,0,0,0.15)',
+                zIndex: '9999',
+                animation: 'fadeInSlide 0.3s ease',
+            });
+            document.body.appendChild(toast);
+            setTimeout(() => toast.remove(), 2500);
+        }
+    </script>
+
+    <style>
+        @keyframes fadeInSlide {
+            from { opacity: 0; transform: translateY(20px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</body>
+</html>

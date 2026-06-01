@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nearest Grocery Shop</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+
+<!-- NAV -->
+{% include 'header.html' %}
+
+<!-- HERO -->
+<section class="hero-premium">
+    <div class="hero-premium-container">
+        <div class="hero-left">
+            <div class="hero-badge">⚡ Instant Kirana Deliveries</div>
+            <h1>Your Neighborhood <span class="text-gradient">Grocery Stores</span>, Delivered.</h1>
+            <p>Shop fresh daily essentials from trusted local stores near you. Scan your handwritten grocery lists or add items digitally for instant delivery.</p>
+
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}{% for cat, msg in messages %}
+                    <div class="alert alert-{{ cat }}">{{ msg }}</div>
+                {% endfor %}{% endif %}
+            {% endwith %}
+
+            <div class="hero-actions">
+                {% if session.get('user') %}
+                    {% if session['user']['role'] == 'customer' %}
+                        <a href="/location" class="btn btn-accent btn-large">🗺️ Find Shops Near Me</a>
+                        <a href="/my_orders" class="btn btn-outline-large">📦 Track My Orders</a>
+                    {% else %}
+                        <a href="/owner_dashboard" class="btn btn-accent btn-large">🏪 Shop Owner Dashboard</a>
+                    {% endif %}
+                {% else %}
+                    <a href="/register?role=customer" class="btn btn-accent btn-large">🛒 Start Shopping</a>
+                    <a href="/register?role=owner" class="btn btn-outline-large">🏪 Register Store</a>
+                {% endif %}
+            </div>
+            
+            <div class="hero-stats">
+                <div class="stat-item">
+                    <span class="stat-num">15+</span>
+                    <span class="stat-lbl">Local Shops</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-num">500+</span>
+                    <span class="stat-lbl">Daily Users</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-num">10 Min</span>
+                    <span class="stat-lbl">Avg Delivery</span>
+                </div>
+            </div>
+        </div>
+        <div class="hero-right">
+            <!-- Graphical grocery delivery illustration mock -->
+            <div class="hero-mockup-card">
+                <div class="mockup-header">
+                    <span class="mockup-dot"></span>
+                    <span class="mockup-dot"></span>
+                    <span class="mockup-dot"></span>
+                    <span class="mockup-title">⚡ Fast Delivery</span>
+                </div>
+                <div class="mockup-body" style="text-align: center; padding: 40px 20px;">
+                    <div style="font-size: 3rem; margin-bottom: 10px;">🚚💨</div>
+                    <h3 style="margin-bottom: 5px; color: var(--text-dark);">Delivery in Minutes</h3>
+                    <p style="color: var(--text-muted); font-size: 0.9rem;">From your favorite neighborhood stores right to your doorstep.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- SMART LIST UPLOAD BANNER -->
+<section class="upload-promo-section">
+    <div class="upload-promo-container">
+        <div class="upload-promo-left">
+            <div class="ocr-preview-box">
+                <div class="ocr-sheet">
+                    <div class="ocr-line-strike">📝 Weekly Kirana List</div>
+                    <div class="ocr-line">1. Wheat Flour (Atta) - 5kg</div>
+                    <div class="ocr-line">2. Sugar - 1kg</div>
+                    <div class="ocr-line">3. Amul Butter - 100g</div>
+                    <div class="ocr-scan-bar"></div>
+                </div>
+            </div>
+        </div>
+        <div class="upload-promo-right">
+            <div class="promo-tag">🚀 AI List Extractor</div>
+            <h2>Got a Handwritten List? Just Upload & Order!</h2>
+            <p>Don't waste time adding items one-by-one. Take a picture of your grocery list, upload it, and our smart AI OCR will automatically extract the products, match them with store prices, and place your order in 3 seconds!</p>
+            {% if session.get('user') %}
+                <a href="/location" class="btn btn-green">Try Smart Upload Now &rarr;</a>
+            {% else %}
+                <a href="/login" class="btn btn-green">Login to Try List Upload &rarr;</a>
+            {% endif %}
+        </div>
+    </div>
+</section>
+
+<!-- HOW IT WORKS -->
+<section class="steps-section-premium">
+    <h2 class="section-title-premium">How NearestGrocery Works</h2>
+    <p class="section-subtitle-premium">Get your monthly supplies in 3 simple steps</p>
+    <div class="steps-grid-premium">
+        <div class="step-card-premium">
+            <div class="step-icon-premium">📍</div>
+            <h3>1. Pin Location</h3>
+            <p>Select your residential area in Nanded and allow GPS to calculate precise delivery distances.</p>
+        </div>
+        <div class="step-card-premium">
+            <div class="step-icon-premium">🏪</div>
+            <h3>2. Select Shop</h3>
+            <p>Compare distances, ratings, and active statuses across local supermarkets and kirana partners.</p>
+        </div>
+        <div class="step-card-premium">
+            <div class="step-icon-premium">🛍️</div>
+            <h3>3. Get Fast Delivery</h3>
+            <p>Add items or upload your handwritten list, checkout securely, and track live status changes.</p>
+        </div>
+    </div>
+</section>
+
+<!-- POPULAR PRODUCTS SECTION -->
+<section class="popular-products-section">
+    <div class="popular-container">
+        <h2>🔥 Top Categories We Deliver</h2>
+        <p>Fresh stock sourced daily from Nanded's leading grocery providers</p>
+        <div class="category-grid-premium">
+            <div class="cat-card-premium">
+                <span class="cat-icon-premium">🍎</span>
+                <h4>Fresh Veggies</h4>
+                <p>Potatoes, Onions & more</p>
+            </div>
+            <div class="cat-card-premium">
+                <span class="cat-icon-premium">🥛</span>
+                <h4>Dairy & Eggs</h4>
+                <p>Fresh Milk, Butter, Cheese</p>
+            </div>
+            <div class="cat-card-premium">
+                <span class="cat-icon-premium">🌾</span>
+                <h4>Grains & Oils</h4>
+                <p>Atta, Rice, Sunflower Oil</p>
+            </div>
+            <div class="cat-card-premium">
+                <span class="cat-icon-premium">🧂</span>
+                <h4>Daily Essentials</h4>
+                <p>Sugar, Salt & Spices</p>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- WHY CHOOSE US -->
+<section class="why-us-section">
+    <div class="why-us-container">
+        <div class="why-us-info">
+            <h2>Why Choose NearestGrocery?</h2>
+            <p>We combine the convenience of modern e-commerce with the reliability of your local shop owner.</p>
+            <div class="why-grid">
+                <div class="why-item">
+                    <span class="why-check">✓</span>
+                    <div>
+                        <h4>Hyperlocal Accuracy</h4>
+                        <p>Our Haversine GPS algorithm sorts shops so you always buy from the closest provider.</p>
+                    </div>
+                </div>
+                <div class="why-item">
+                    <span class="why-check">✓</span>
+                    <div>
+                        <h4>OCR Smart Extraction</h4>
+                        <p>Upload photos of your handwritten grocery lists. We parse them instantly using Vision AI.</p>
+                    </div>
+                </div>
+                <div class="why-item">
+                    <span class="why-check">✓</span>
+                    <div>
+                        <h4>Direct Store Contact</h4>
+                        <p>Get the phone numbers and owners' names for clear transparent communication.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="why-us-graphic">
+            <div class="why-illustration">🏪🤝🏡</div>
+        </div>
+    </div>
+</section>
+
+<!-- TESTIMONIALS -->
+<section class="testimonials-section">
+    <h2 class="section-title-premium">What Our Customers Say</h2>
+    <div class="testimonials-grid">
+        <div class="testimonial-card">
+            <div class="stars">⭐⭐⭐⭐⭐</div>
+            <p>"The list upload feature is pure magic! I just uploaded my husband's handwritten shopping note and it created a matched order in seconds."</p>
+            <div class="user-info">
+                <span class="avatar-letter" style="background:#e0f2fe; color:#0369a1;">P</span>
+                <div>
+                    <h4>Priya Desai</h4>
+                    <span>Customer · Nanded City</span>
+                </div>
+            </div>
+        </div>
+        <div class="testimonial-card">
+            <div class="stars">⭐⭐⭐⭐⭐</div>
+            <p>"As a store owner, the owner dashboard has made order status management and tracking daily earnings completely painless. Highly recommend!"</p>
+            <div class="user-info">
+                <span class="avatar-letter" style="background:#e8f5e9; color:#166534;">R</span>
+                <div>
+                    <h4>Ramesh Jilawar</h4>
+                    <span>Store Owner · Nanded City</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- CALL TO ACTION BANNER -->
+<section class="cta-premium-section">
+    <div class="cta-gradient-card">
+        <h2>Order Your Daily Supplies in Under 10 Minutes</h2>
+        <p>Join thousands of families in Nanded ordering groceries from their trusted neighborhood stores.</p>
+        {% if session.get('user') %}
+            <a href="/location" class="btn btn-accent btn-large" style="background:#ffffff; color:var(--accent-color-dark); box-shadow:none;">Find Nearby Shops &rarr;</a>
+        {% else %}
+            <a href="/register?role=customer" class="btn btn-accent btn-large" style="background:#ffffff; color:var(--accent-color-dark); box-shadow:none;">Create Free Account &rarr;</a>
+        {% endif %}
+    </div>
+</section>
+
+{% include 'footer.html' %}
+
+</body>
+</html>
