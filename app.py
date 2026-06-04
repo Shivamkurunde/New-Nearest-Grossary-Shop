@@ -14,6 +14,8 @@ from flask import (Flask, render_template, request, redirect,
 from werkzeug.security import generate_password_hash, check_password_hash
 from werkzeug.utils import secure_filename
 from pymongo import MongoClient
+import certifi
+import mongomock
 from dotenv import load_dotenv
 
 # Load environment variables
@@ -65,7 +67,8 @@ def allowed_file(filename):
 
 # ── MongoDB Setup ─────────────────────────────────────────────────────────────
 MONGO_URI = os.environ.get('MONGO_URI', 'mongodb+srv://dbRurik:Rutik123@cluster0.dfeobzy.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0')
-client = MongoClient(MONGO_URI, tlsAllowInvalidCertificates=True, serverSelectionTimeoutMS=50000)
+client = MongoClient(MONGO_URI, tlsCAFile=certifi.where(), serverSelectionTimeoutMS=50000)
+# client = mongomock.MongoClient() # Using a local in-memory DB so you can run it without Atlas access
 db = client.grocery_app
 users_collection          = db.users
 shops_collection          = db.shops
