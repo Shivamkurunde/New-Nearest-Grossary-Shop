@@ -1,0 +1,776 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ shop.name }} – Items | Nearest Grocery Shop</title>
+    <meta name="description" content="Browse fresh grocery items at {{ shop.name }} and add them to your cart.">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+
+{% include 'header.html' %}
+
+
+<!-- ══ CART PANEL ══════════════════════════════════════════════════════════ -->
+<div class="cart-panel" id="cart-panel">
+    <div class="cart-header">
+        <h3>🛒 Your Cart</h3>
+        <button onclick="toggleCart()" class="cart-close">✕</button>
+    </div>
+    <div id="cart-items">
+        <p class="cart-empty">Your cart is empty. Add items below!</p>
+    </div>
+    <div class="cart-footer" id="cart-footer" style="display:none;">
+        <div class="cart-total">Total: <strong id="cart-total">₹0</strong></div>
+        <button class="btn btn-accent" onclick="placeOrder()" id="place-order-btn" style="width:100%;">🛒 Place Order</button>
+    </div>
+</div>
+<div class="cart-overlay" id="cart-overlay" onclick="toggleCart()"></div>
+
+<!-- ══ PAGE HEADER ═════════════════════════════════════════════════════════ -->
+<div class="page-header items-header">
+    <div>
+        <div class="breadcrumb">
+            <a href="/">Home</a> ›
+            <a href="/location">Location</a> ›
+            <a href="/shops?loc={{ loc }}">Shops</a> ›
+            <span>{{ shop.name }}</span>
+        </div>
+        <h1>🏪 {{ shop.name }}</h1>
+        <p>
+            Browse {{ items|length }} fresh grocery items · 📍 {{ shop.distance }} away
+            {% if shop.status == 'Open' %}· 🟢 Open Now{% else %}· 🔴 Currently Closed{% endif %}
+        </p>
+    </div>
+    <div>
+        <button class="btn btn-extract" onclick="revealUploadSection()">
+            📄 Extract &amp; Find Items
+        </button>
+    </div>
+</div>
+
+<!-- ══ MAIN CONTENT ════════════════════════════════════════════════════════ -->
+<div class="products-main container">
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+        {% for cat, msg in messages %}
+        <div class="alert alert-{{ cat }}" style="margin-bottom:20px;">{{ msg }}</div>
+        {% endfor %}
+    {% endif %}
+    {% endwith %}
+
+    <!-- ── GROCERY LIST UPLOAD SECTION ─────────────────────────────────── -->
+    <div class="upload-section" id="upload-section" style="display: none; margin-bottom: 40px; animation: fadeInUp 0.4s ease; background: var(--card-bg); border: 1.5px solid var(--border); border-radius: var(--radius); padding: 32px; box-shadow: var(--shadow);">
+        <div class="upload-icon" style="cursor: pointer;" onclick="triggerFileInput()">📄</div>
+        <h3 style="font-size: 1.5rem; margin-bottom: 8px;">Upload Shopping List</h3>
+        <p style="font-size: 0.95rem; color: var(--text-muted); margin-bottom: 20px;">Upload a list format or image, and we'll automatically create your order and match catalogue items.</p>
+ 
+        <!-- Drag and Drop Area -->
+        <div class="drag-drop-area" id="drag-drop-area" 
+             ondragover="handleDragOver(event)" 
+             ondragleave="handleDragLeave(event)" 
+             ondrop="handleDrop(event)" 
+             onclick="triggerFileInput()"
+             style="border: 2px dashed var(--primary-green); border-radius: 16px; padding: 40px 20px; background: var(--primary-green-light); transition: all 0.3s ease; cursor: pointer; margin-bottom: 20px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px;">
+            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="var(--primary-green)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                <polyline points="17 8 12 3 7 8"></polyline>
+                <line x1="12" y1="3" x2="12" y2="15"></line>
+            </svg>
+            <span style="font-weight: 700; color: var(--primary-green); font-size: 1.1rem;">Drag and drop your file here</span>
+            <span style="color: var(--text-muted); font-size: 0.9rem;">OR</span>
+            <button class="btn btn-outline-sm" type="button" style="border-color: var(--primary-green); color: var(--primary-green); pointer-events: none;">Choose File</button>
+            <input type="file" id="grocery-file-input" name="grocery_file" accept=".png,.jpg,.jpeg" onchange="groceryFileChosen(this)" style="display: none;">
+        </div>
+ 
+        <p class="upload-formats" style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 20px;">
+            Supported: <strong>Images (Handwritten/Typed)</strong> &middot; Max: 16 MB
+        </p>
+ 
+        <div class="upload-form-wrap" style="display: flex; flex-direction: column; align-items: center; gap: 12px;">
+            <span class="file-chosen" id="grocery-file-chosen" style="display: none; font-weight: 700; color: var(--primary-green); margin-bottom: 10px; font-size: 0.95rem;"></span>
+            <button class="btn-upload" id="grocery-upload-btn" onclick="uploadGroceryList()" disabled style="width: 100%; max-width: 320px; display: inline-flex; align-items: center; justify-content: center; gap: 8px;">
+                🔍 Extract &amp; Find Items
+            </button>
+        </div>
+ 
+        <!-- Upload progress -->
+        <div class="upload-progress" id="upload-progress" style="display:none; margin-top: 20px;">
+            <div class="progress-bar-track" style="height: 10px; background: var(--border); border-radius: 5px; overflow: hidden; width: 100%; max-width: 480px; margin: 0 auto;">
+                <div class="progress-bar-fill" id="progress-bar-fill" style="height: 100%; background: linear-gradient(90deg, var(--primary-green), var(--primary-green-dark)); width: 0%; transition: width 0.3s ease;"></div>
+            </div>
+            <p class="progress-text" id="progress-text" style="font-size: 0.85rem; color: var(--text-muted); margin-top: 8px; font-weight: 600;">Uploading file…</p>
+        </div>
+ 
+        <!-- Upload Status/Indicator -->
+        <div id="upload-status-indicator" style="display: none; padding: 12px; border-radius: 8px; margin-top: 20px; font-weight: 700; font-size: 0.95rem; text-align: center; max-width: 480px; margin-left: auto; margin-right: auto;"></div>
+ 
+        <!-- Extraction Results -->
+        <div class="ocr-results" id="ocr-results" style="display:none; margin-top: 30px; border-top: 2px solid var(--border); padding-top: 24px;">
+            <div style="background: var(--primary-green-light); border-radius: 12px; padding: 20px; border: 1px solid var(--border); margin-bottom: 24px; text-align: center;">
+                <div style="font-size: 2.2rem; margin-bottom: 8px;">🎉</div>
+                <h4 style="font-size: 1.25rem; font-weight: 800; color: var(--primary-green); margin-bottom: 4px;">Order Automatically Generated!</h4>
+                <p style="font-size: 0.9rem; color: var(--text-main); margin-bottom: 12px;" id="order-success-msg"></p>
+                <div id="order-meta-info" style="font-size: 0.85rem; color: var(--text-muted); display: inline-block; text-align: left; background: var(--card-bg); padding: 12px 18px; border-radius: 8px; border: 1.5px solid var(--border); margin-bottom: 16px;"></div>
+                <div>
+                    <a href="#" class="btn btn-green" id="track-order-btn" style="background: var(--primary-green); border-color: var(--primary-green); font-weight: 800; padding: 10px 24px; font-size: 0.95rem;">
+                        📦 Track My Order
+                    </a>
+                </div>
+            </div>
+ 
+            <div class="ocr-summary" style="display: flex; gap: 16px; justify-content: center; margin-bottom: 20px;">
+                <div class="ocr-stat ocr-found" style="background: var(--card-bg); border: 1.5px solid var(--border); border-radius: 12px; padding: 12px 24px; text-align: center; min-width: 120px;">
+                    <span class="ocr-stat-num" id="ocr-found-count" style="display: block; font-size: 2rem; font-weight: 900; color: var(--primary-green);">0</span>
+                    <span class="ocr-stat-label" style="font-size: 0.75rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase;">Matched Items</span>
+                </div>
+                <div class="ocr-stat ocr-missing" style="background: var(--card-bg); border: 1.5px solid var(--border); border-radius: 12px; padding: 12px 24px; text-align: center; min-width: 120px;">
+                    <span class="ocr-stat-num" id="ocr-missing-count" style="display: block; font-size: 2rem; font-weight: 900; color: #ef4444;">0</span>
+                    <span class="ocr-stat-label" style="font-size: 0.75rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase;">Unmatched</span>
+                </div>
+            </div>
+ 
+            <div id="ocr-found-list"></div>
+            <div id="ocr-missing-list"></div>
+        </div>
+    </div>
+
+    <!-- ── SECTION HEADING ──────────────────────────────────────────────── -->
+    <h2 class="section-heading" style="margin-bottom:6px;">Available Grocery Items</h2>
+    <p class="section-sub" style="margin-bottom:28px;">
+        {{ items|length }} items available · Prices per unit shown
+    </p>
+
+    <!-- ── ITEMS GRID ────────────────────────────────────────────────────── -->
+    <div class="items-grid">
+        {% for item in items %}
+        <div class="item-card" id="item-{{ item.id }}">
+            <div class="item-img-wrap">
+                <img src="{{ item.image }}"
+                     alt="{{ item.name }}"
+                     class="item-img"
+                     loading="lazy"
+                     onerror="this.src='/static/images/products/placeholder.png'; this.style.objectFit='contain'; this.style.padding='16px';">
+                {% if item.badge %}
+                <span class="item-badge" style="background: {{ item.badge_color }};">{{ item.badge }}</span>
+                {% endif %}
+                <span class="item-stock {{ 'low-stock' if item.stock == 'Low Stock' else 'in-stock' }}">
+                    {{ item.stock }}
+                </span>
+            </div>
+            <div class="item-body">
+                <div class="item-cat">{{ item.category }}</div>
+                <h3 class="item-name">{{ item.name }}</h3>
+                <p class="item-desc">{{ item.description }}</p>
+                <div class="item-footer">
+                    <div>
+                        <div class="item-price">₹{{ item.price }}</div>
+                        <div class="item-unit">{{ item.unit }}</div>
+                    </div>
+                    {% if shop.status == 'Open' %}
+                        <button class="btn-add-cart"
+                                id="btn-{{ item.id }}"
+                                onclick="addToCart({{ item.id }}, '{{ item.name }}', {{ item.price }}, '{{ item.image }}', this)">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
+                                 stroke="currentColor" stroke-width="2.5">
+                                <path d="M12 5v14M5 12h14"/>
+                            </svg>
+                            Add
+                        </button>
+                    {% else %}
+                        <button class="btn-add-cart btn-add-disabled" disabled>Closed</button>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+</div><!-- /products-main -->
+
+<footer class="footer">
+    &copy; 2026 <strong>Nearest Grocery Shop</strong>. Built with Flask &amp; MongoDB.
+</footer>
+
+<!-- ══ TOAST ════════════════════════════════════════════════════════════════ -->
+<div class="toast" id="toast"></div>
+
+<!-- ══ SCRIPTS ══════════════════════════════════════════════════════════════ -->
+<script>
+/* ── Cart State ─────────────────────────────────────────────────────────── */
+let cart = [];
+let ocrFoundItems = [];   // items returned from OCR to add-all
+
+/* ── Add item to cart ───────────────────────────────────────────────────── */
+function addToCart(id, name, price, image, btn) {
+    const existing = cart.find(i => i.id === id);
+    if (existing) {
+        existing.qty += 1;
+    } else {
+        cart.push({ id, name, price, image, qty: 1 });
+    }
+    if (btn) {
+        btn.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none"
+            stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg> Added!`;
+        btn.classList.add('btn-added');
+        setTimeout(() => {
+            btn.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none"
+                stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg> Add`;
+            btn.classList.remove('btn-added');
+        }, 1800);
+    }
+    showToast(`✅ ${name} added to cart!`);
+    renderCart();
+}
+
+/* ── Render cart panel ──────────────────────────────────────────────────── */
+function renderCart() {
+    const countEl  = document.getElementById('cart-count');
+    const itemsEl  = document.getElementById('cart-items');
+    const footerEl = document.getElementById('cart-footer');
+    const totalEl  = document.getElementById('cart-total');
+
+    const totalQty  = cart.reduce((s, i) => s + i.qty, 0);
+    const totalCost = cart.reduce((s, i) => s + i.price * i.qty, 0);
+    countEl.textContent = totalQty;
+
+    if (cart.length === 0) {
+        itemsEl.innerHTML = '<p class="cart-empty">Your cart is empty!</p>';
+        footerEl.style.display = 'none';
+    } else {
+        itemsEl.innerHTML = cart.map(i => `
+            <div class="cart-item">
+                <img src="${i.image}" alt="${i.name}" class="ci-img"
+                     onerror="this.src='/static/images/products/placeholder.png';">
+                <span class="ci-name">${i.name}</span>
+                <div class="ci-controls">
+                    <button onclick="changeQty(${i.id}, -1)">−</button>
+                    <span>${i.qty}</span>
+                    <button onclick="changeQty(${i.id}, 1)">+</button>
+                </div>
+                <span class="ci-price">₹${i.price * i.qty}</span>
+            </div>
+        `).join('');
+        footerEl.style.display = 'block';
+        totalEl.textContent = '₹' + totalCost;
+    }
+}
+
+function changeQty(id, delta) {
+    const item = cart.find(i => i.id === id);
+    if (!item) return;
+    item.qty += delta;
+    if (item.qty <= 0) cart = cart.filter(i => i.id !== id);
+    renderCart();
+}
+
+function toggleCart() {
+    const panel   = document.getElementById('cart-panel');
+    const overlay = document.getElementById('cart-overlay');
+    const open    = panel.classList.toggle('open');
+    overlay.classList.toggle('show', open);
+}
+
+function placeOrder() {
+    if (cart.length === 0) {
+        showToast('⚠ Your cart is empty. Please add items first.');
+        return;
+    }
+
+    const btn = document.getElementById('place-order-btn');
+    const totalCost = cart.reduce((s, i) => s + i.price * i.qty, 0);
+
+    // Show loading state
+    if (btn) {
+        btn.disabled = true;
+        btn.textContent = '⏳ Placing Order...';
+    }
+
+    fetch('/api/place_order', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            shop: "{{ shop.name }}",
+            items: cart,
+            total: totalCost
+        })
+    })
+    .then(r => {
+        if (!r.ok) {
+            return r.json().then(d => { throw new Error(d.message || `Server error (${r.status})`); });
+        }
+        return r.json();
+    })
+    .then(data => {
+        if (btn) { btn.disabled = false; btn.textContent = '🛒 Place Order'; }
+        if (data.success) {
+            showToast('🎉 Order placed successfully! Redirecting to My Orders...');
+            cart = [];
+            renderCart();
+            toggleCart();
+            // Redirect to My Orders after a short delay so user sees the toast
+            setTimeout(() => { window.location.href = '/my_orders'; }, 1800);
+        } else {
+            showToast('❌ ' + (data.message || 'Could not place order. Please try again.'));
+        }
+    })
+    .catch(err => {
+        if (btn) { btn.disabled = false; btn.textContent = '🛒 Place Order'; }
+        console.error('[placeOrder] Error:', err);
+        showToast('❌ ' + (err.message || 'Network error. Please try again.'));
+    });
+}
+
+/* ── Grocery List Upload (Drag and Drop & Automatic Order Generation) ───── */
+function revealUploadSection() {
+    const sect = document.getElementById('upload-section');
+    if (sect.style.display === 'none') {
+        sect.style.display = 'block';
+    }
+    sect.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+function triggerFileInput() {
+    document.getElementById('grocery-file-input').click();
+}
+
+function handleDragOver(e) {
+    e.preventDefault();
+    const area = document.getElementById('drag-drop-area');
+    area.style.background = '#ffe0b2';
+    area.style.borderColor = 'var(--orange)';
+}
+
+function handleDragLeave(e) {
+    e.preventDefault();
+    const area = document.getElementById('drag-drop-area');
+    area.style.background = '#fff8e1';
+    area.style.borderColor = '#ffb74d';
+}
+
+function handleDrop(e) {
+    e.preventDefault();
+    const area = document.getElementById('drag-drop-area');
+    area.style.background = '#fff8e1';
+    area.style.borderColor = '#ffb74d';
+    
+    const fileInput = document.getElementById('grocery-file-input');
+    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+        fileInput.files = e.dataTransfer.files;
+        groceryFileChosen(fileInput);
+    }
+}
+
+function groceryFileChosen(input) {
+    const btn = document.getElementById('grocery-upload-btn');
+    const chosen = document.getElementById('grocery-file-chosen');
+    const indicator = document.getElementById('upload-status-indicator');
+    const results = document.getElementById('ocr-results');
+
+    results.style.display = 'none';
+    indicator.style.display = 'none';
+
+    if (input.files && input.files[0]) {
+        const file = input.files[0];
+        const ext = file.name.split('.').pop().toLowerCase();
+        const allowed = ['png', 'jpg', 'jpeg'];
+
+        if (!allowed.includes(ext)) {
+            showToast('❌ Invalid file type. Please upload an Image (PNG, JPG, JPEG).');
+            input.value = '';
+            btn.disabled = true;
+            chosen.style.display = 'none';
+            return;
+        }
+
+        if (file.size > 16 * 1024 * 1024) {
+            showToast('❌ File is too large. Maximum size allowed is 16 MB.');
+            input.value = '';
+            btn.disabled = true;
+            chosen.style.display = 'none';
+            return;
+        }
+
+        chosen.textContent = `Selected: ${file.name} (${(file.size / 1024).toFixed(1)} KB)`;
+        chosen.style.display = 'block';
+        chosen.style.color = 'var(--green)';
+        btn.disabled = false;
+        
+        // Show status indicator
+        indicator.textContent = `📄 File ready to process.`;
+        indicator.className = '';
+        indicator.style.display = 'block';
+        indicator.style.background = '#e8f5e9';
+        indicator.style.color = '#2e7d32';
+    }
+}
+
+function uploadGroceryList() {
+    const fileInput = document.getElementById('grocery-file-input');
+    const progress = document.getElementById('upload-progress');
+    const progressFill = document.getElementById('progress-bar-fill');
+    const progressText = document.getElementById('progress-text');
+    const btn = document.getElementById('grocery-upload-btn');
+    const results = document.getElementById('ocr-results');
+    const indicator = document.getElementById('upload-status-indicator');
+
+    if (!fileInput.files || !fileInput.files[0]) {
+        showToast('❌ Please select a file first.');
+        return;
+    }
+
+    const file = fileInput.files[0];
+    const formData = new FormData();
+    formData.append('grocery_file', file);
+    formData.append('shop_id', "{{ shop.id }}");
+    formData.append('shop_name', "{{ shop.name }}");
+
+    // Show progress & hide old states
+    progress.style.display = 'block';
+    results.style.display = 'none';
+    btn.disabled = true;
+    btn.textContent = '⏳ Processing…';
+    progressFill.style.width = '20%';
+    progressText.textContent = 'Uploading shopping list securely…';
+
+    indicator.textContent = 'Uploading and saving file…';
+    indicator.style.background = '#fff3e0';
+    indicator.style.color = '#e65100';
+    indicator.style.display = 'block';
+
+    // Fake progress ticks
+    let pct = 20;
+    const ticker = setInterval(() => {
+        pct = Math.min(pct + 8, 90);
+        progressFill.style.width = pct + '%';
+        if (pct >= 40) {
+            progressText.textContent = 'Reading list structure & items…';
+            indicator.textContent = 'Parsing file rows and content…';
+        }
+        if (pct >= 70) {
+            progressText.textContent = 'Matching items in catalogue…';
+            indicator.textContent = 'Generating order automatically…';
+        }
+    }, 300);
+
+    fetch('/api/upload_grocery_list', {
+        method: 'POST',
+        body: formData
+    })
+    .then(r => r.json())
+    .then(data => {
+        clearInterval(ticker);
+        progressFill.style.width = '100%';
+        progressText.textContent = 'Order generated successfully!';
+
+        setTimeout(() => {
+            progress.style.display = 'none';
+            btn.disabled = false;
+            btn.textContent = '🔍 Extract & Find Items';
+
+            if (!data.success) {
+                showToast('❌ ' + data.message);
+                indicator.textContent = '❌ Parsing failed: ' + data.message;
+                indicator.style.background = '#ffebee';
+                indicator.style.color = '#c62828';
+                return;
+            }
+
+            if (data.warning || data.missing_count > 0 || !data.items || data.items.length === 0) {
+                indicator.textContent = '⚠ Some items could not be identified completely. Extracted valid items successfully. Please review and edit before placing your order.';
+                indicator.style.background = '#fff3e0';
+                indicator.style.color = '#e65100';
+            } else {
+                indicator.textContent = '✅ Extraction completed successfully!';
+                indicator.style.background = '#e8f5e9';
+                indicator.style.color = '#2e7d32';
+            }
+
+            // Set global order state
+            currentUploadedOrderItems = data.items || [];
+            currentUploadedOrderId = data.order_id;
+            currentCustomerName = data.customer_name || '';
+            currentCustomerPhone = data.phone || '';
+            currentCustomerAddress = data.address || '';
+
+            // Show Results
+            document.getElementById('ocr-found-count').textContent = data.found_count;
+            document.getElementById('ocr-missing-count').textContent = data.missing_count;
+            
+            // Build the success order details
+            document.getElementById('order-success-msg').innerHTML = 
+                `Your order was automatically submitted to <strong>{{ shop.name }}</strong>!`;
+            
+            updateOrderMetaInfoDisplay(data.total);
+
+            // Update Track My Order link
+            const trackBtn = document.getElementById('track-order-btn');
+            trackBtn.href = `/track_order/${data.order_id}`;
+
+            renderOcrResults(data);
+            showToast('🎉 Order ID #' + data.order_id.slice(0, 8) + ' created automatically!');
+        }, 500);
+    })
+    .catch(() => {
+        clearInterval(ticker);
+        progress.style.display = 'none';
+        btn.disabled = false;
+        btn.textContent = '🔍 Extract & Find Items';
+        showToast('❌ Network error. Please try again.');
+        indicator.textContent = '❌ Network error.';
+        indicator.style.background = '#ffebee';
+        indicator.style.color = '#c62828';
+    });
+}
+
+let currentUploadedOrderItems = [];
+let currentUploadedOrderId = '';
+let currentCustomerName = '';
+let currentCustomerPhone = '';
+let currentCustomerAddress = '';
+
+function updateOrderMetaInfoDisplay(total) {
+    const metaHtml = `
+        <div><strong>Order ID:</strong> #${currentUploadedOrderId}</div>
+        <div><strong>Customer:</strong> ${currentCustomerName}</div>
+        <div><strong>Phone Number:</strong> ${currentCustomerPhone}</div>
+        <div><strong>Address:</strong> ${currentCustomerAddress}</div>
+        <div><strong>Total Estimated Cost:</strong> ₹${total}</div>
+        <div><strong>Extracted Date & Time:</strong> ${new Date().toLocaleString()}</div>
+    `;
+    document.getElementById('order-meta-info').innerHTML = metaHtml;
+}
+
+function updateUploadedOrderItemName(index, newName) {
+    if (currentUploadedOrderItems[index]) {
+        currentUploadedOrderItems[index].name = newName;
+    }
+}
+
+function updateUploadedOrderItemQty(index, newQty) {
+    if (currentUploadedOrderItems[index]) {
+        currentUploadedOrderItems[index].qty_str = newQty;
+        currentUploadedOrderItems[index].qty = newQty;
+        
+        // Dynamically update total price without losing input focus
+        let grandTotal = 0;
+        currentUploadedOrderItems.forEach(item => {
+            const price = parseFloat(item.price) || 0;
+            const qty = parseFloat(item.qty_str || item.qty || '1') || 1;
+            grandTotal += (price * qty);
+        });
+        const totalEl = document.getElementById('ocr-grand-total');
+        if (totalEl) totalEl.textContent = '₹' + grandTotal.toFixed(2);
+    }
+}
+
+function incrementUploadedOrderItemQty(index) {
+    if (currentUploadedOrderItems[index]) {
+        let current = parseFloat(currentUploadedOrderItems[index].qty_str || currentUploadedOrderItems[index].qty || '1');
+        if (isNaN(current)) current = 1;
+        let newQty = current + 1;
+        currentUploadedOrderItems[index].qty_str = newQty.toString();
+        currentUploadedOrderItems[index].qty = newQty.toString();
+        renderOcrResults(); 
+    }
+}
+
+function decrementUploadedOrderItemQty(index) {
+    if (currentUploadedOrderItems[index]) {
+        let current = parseFloat(currentUploadedOrderItems[index].qty_str || currentUploadedOrderItems[index].qty || '1');
+        if (isNaN(current)) current = 1;
+        let newQty = current > 1 ? current - 1 : 1;
+        currentUploadedOrderItems[index].qty_str = newQty.toString();
+        currentUploadedOrderItems[index].qty = newQty.toString();
+        renderOcrResults(); 
+    }
+}
+
+function deleteUploadedOrderItem(index) {
+    currentUploadedOrderItems.splice(index, 1);
+    renderOcrResults({ items: currentUploadedOrderItems, order_id: currentUploadedOrderId });
+}
+
+function addCustomItemToUploadedOrder() {
+    currentUploadedOrderItems.push({
+        id: "custom_" + Math.random().toString(36).substr(2, 9),
+        name: "New Item",
+        price: 0,
+        unit: "",
+        qty: "1",
+        qty_str: "1",
+        image: "/static/images/products/placeholder.png",
+        is_custom: true
+    });
+    renderOcrResults({ items: currentUploadedOrderItems, order_id: currentUploadedOrderId });
+}
+
+function saveUploadedOrderChanges() {
+    if (!currentUploadedOrderId) return;
+    
+    const overlay = document.getElementById('loading-overlay') || { classList: { add: () => {}, remove: () => {} } };
+    overlay.classList.add('show');
+    
+    fetch('/api/update_uploaded_order', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            order_id: currentUploadedOrderId,
+            items: currentUploadedOrderItems
+        })
+    })
+    .then(r => r.json())
+    .then(data => {
+        overlay.classList.remove('show');
+        if (data.success) {
+            showToast('✅ Order updated successfully!');
+            updateOrderMetaInfoDisplay(data.new_total);
+            renderOcrResults({ items: currentUploadedOrderItems, order_id: currentUploadedOrderId });
+        } else {
+            showToast('❌ ' + data.message);
+        }
+    })
+    .catch(() => {
+        overlay.classList.remove('show');
+        showToast('❌ Network error. Please try again.');
+    });
+}
+
+function renderOcrResults(data) {
+    const resultsEl = document.getElementById('ocr-results');
+    const foundListEl = document.getElementById('ocr-found-list');
+    const missingListEl = document.getElementById('ocr-missing-list');
+
+    // Clear old missing element
+    missingListEl.innerHTML = '';
+
+    const items = currentUploadedOrderItems || [];
+    
+    // Dynamically update the summary count statistics
+    let foundCount = 0;
+    let missingCount = 0;
+    items.forEach(item => {
+        if (item.is_custom) {
+            missingCount++;
+        } else {
+            foundCount++;
+        }
+    });
+    
+    const foundCountEl = document.getElementById('ocr-found-count');
+    if (foundCountEl) foundCountEl.textContent = foundCount;
+    const missingCountEl = document.getElementById('ocr-missing-count');
+    if (missingCountEl) missingCountEl.textContent = missingCount;
+
+    if (items.length === 0) {
+        foundListEl.innerHTML = `
+            <div style="text-align: center; padding: 24px; background: var(--primary-green-light); border: 1.5px solid var(--border); border-radius: 12px; margin-bottom: 20px;">
+                <div style="font-size: 1.8rem; margin-bottom: 8px;">ℹ️</div>
+                <p style="font-weight: 700; color: var(--text-main); margin-bottom: 0;">No items were extracted. Please click "➕ Add Item" below to add them manually.</p>
+            </div>
+            <div style="display: flex; gap: 12px; margin-top: 16px; justify-content: flex-start; flex-wrap: wrap;">
+                <button class="btn" onclick="addCustomItemToUploadedOrder()" style="border: 2px dashed var(--primary-green); color: var(--primary-green); font-weight: 700; background: var(--primary-green-light); padding: 10px 18px; border-radius: 8px; cursor: pointer; display: flex; align-items: center; gap: 6px; transition: all 0.2s; font-size: 0.9rem;">
+                    ➕ Add Item
+                </button>
+                <button class="btn btn-green" onclick="saveUploadedOrderChanges()" style="background: var(--primary-green); color: #fff; font-weight: 800; border: none; padding: 10px 22px; border-radius: 8px; cursor: pointer; box-shadow: 0 4px 10px rgba(0,0,0,0.1); display: flex; align-items: center; gap: 6px; transition: all 0.2s; font-size: 0.9rem;">
+                    💾 Save Changes
+                </button>
+            </div>
+        `;
+    } else {
+        let itemsHtml = `
+            <h4 class="ocr-list-title" style="margin-top: 24px; font-size: 1.25rem; font-weight: 800; color: var(--text-main);">📝 Edit Extracted Items</h4>
+            <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 16px;">You can modify item names, adjust quantity/units, delete items, or add new ones. Click "Save Changes" when done.</p>
+            <div class="ocr-item-list" style="display: flex; flex-direction: column; gap: 12px;">
+        `;
+ 
+        items.forEach((item, index) => {
+            const isCustom = item.is_custom || false;
+            const badgeHtml = isCustom 
+                ? `<span style="background:rgba(239, 68, 68, 0.1); color:#ef4444; font-size: 0.75rem; padding: 6px 10px; border-radius: 8px; font-weight:700; display: inline-block; white-space: nowrap;">Custom</span>`
+                : `<span style="background:var(--primary-green-light); color:var(--primary-green); font-size: 0.75rem; padding: 6px 10px; border-radius: 8px; font-weight:700; display: inline-block; white-space: nowrap;">Matched (₹${item.price})</span>`;
+            
+            const qtyVal = item.qty_str || item.qty || '1';
+ 
+            itemsHtml += `
+                <div class="ocr-item" style="display: flex; align-items: center; gap: 12px; background: var(--card-bg); border: 1.5px solid var(--border); border-radius: 12px; padding: 12px 16px; box-shadow: var(--shadow-sm); flex-wrap: wrap;">
+                    <img src="${item.image || '/static/images/products/placeholder.png'}" 
+                         style="width: 48px; height: 48px; object-fit: cover; border-radius: 8px; border: 1px solid var(--border);"
+                         onerror="this.src='/static/images/products/placeholder.png';">
+                    
+                    <div style="flex: 2; min-width: 180px;">
+                         <input type="text" 
+                               value="${item.name}" 
+                               oninput="updateUploadedOrderItemName(${index}, this.value)"
+                               style="width: 100%; padding: 8px 12px; border-radius: 8px; border: 1.5px solid var(--border); font-size: 0.9rem; font-weight: 600; background: var(--bg); color: var(--text-main);"
+                               placeholder="Item Name">
+                    </div>
+                    
+                    <div style="flex: 1; min-width: 120px; display: flex; align-items: center; justify-content: center; gap: 4px;">
+                        <button onclick="decrementUploadedOrderItemQty(${index})" style="width: 32px; height: 32px; border-radius: 50%; border: 1.5px solid var(--border); background: var(--bg); color: var(--text-main); font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.2s;" onmouseover="this.style.background='var(--border)'" onmouseout="this.style.background='var(--bg)'">-</button>
+                        <input type="text" 
+                               value="${qtyVal}" 
+                               oninput="updateUploadedOrderItemQty(${index}, this.value)"
+                               style="width: 60px; padding: 8px 12px; border-radius: 8px; border: 1.5px solid var(--border); font-size: 0.9rem; font-weight: 600; text-align: center; background: var(--bg); color: var(--text-main);"
+                               placeholder="Qty">
+                        <button onclick="incrementUploadedOrderItemQty(${index})" style="width: 32px; height: 32px; border-radius: 50%; border: 1.5px solid var(--border); background: var(--bg); color: var(--text-main); font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.2s;" onmouseover="this.style.background='var(--border)'" onmouseout="this.style.background='var(--bg)'">+</button>
+                    </div>
+ 
+                    <div style="display: flex; align-items: center; gap: 12px;">
+                        ${badgeHtml}
+                        <button class="btn-delete-ocr" 
+                                onclick="deleteUploadedOrderItem(${index})" 
+                                style="background: var(--bg); border: 1px solid var(--border); color: #ef4444; cursor: pointer; font-size: 1rem; width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; transition: all 0.2s;"
+                                onmouseover="this.style.background='rgba(239, 68, 68, 0.1)'"
+                                onmouseout="this.style.background='var(--bg)'"
+                                title="Delete Item">✕</button>
+                    </div>
+                </div>
+            `;
+        });
+ 
+        let grandTotal = 0;
+        items.forEach(item => {
+            const price = parseFloat(item.price) || 0;
+            const qty = parseFloat(item.qty_str || item.qty || '1') || 1;
+            grandTotal += (price * qty);
+        });
+
+        itemsHtml += `
+            </div>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 20px; padding: 16px; background: var(--card-bg); border-radius: 12px; border: 1.5px solid var(--border); box-shadow: var(--shadow-sm);">
+                <span style="font-size: 1.1rem; font-weight: 700; color: var(--text-main);">Total Estimated Price:</span>
+                <span id="ocr-grand-total" style="font-size: 1.3rem; font-weight: 800; color: var(--primary-green);">₹${grandTotal.toFixed(2)}</span>
+            </div>
+            <div style="display: flex; gap: 12px; margin-top: 20px; justify-content: flex-start; flex-wrap: wrap;">
+                <button class="btn" onclick="addCustomItemToUploadedOrder()" style="border: 2px dashed var(--primary-green); color: var(--primary-green); font-weight: 700; background: var(--primary-green-light); padding: 10px 18px; border-radius: 8px; cursor: pointer; display: flex; align-items: center; gap: 6px; transition: all 0.2s; font-size: 0.9rem;">
+                    ➕ Add Item
+                </button>
+                <button class="btn btn-green" onclick="saveUploadedOrderChanges()" style="background: var(--primary-green); color: #fff; font-weight: 800; border: none; padding: 10px 22px; border-radius: 8px; cursor: pointer; box-shadow: 0 4px 10px rgba(0,0,0,0.1); display: flex; align-items: center; gap: 6px; transition: all 0.2s; font-size: 0.9rem;">
+                    💾 Save Changes
+                </button>
+            </div>
+        `;
+        foundListEl.innerHTML = itemsHtml;
+    }
+
+    resultsEl.style.display = 'block';
+    resultsEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+/* ── Toast ──────────────────────────────────────────────────────────────── */
+function showToast(msg) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), 2800);
+}
+</script>
+
+{% include 'footer.html' %}
+</body>
+</html>
